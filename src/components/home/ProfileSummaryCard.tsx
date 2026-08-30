@@ -182,7 +182,7 @@ export default function ProfileSummaryCard() {
           fullWidth
           icon={<User className="w-4 h-4" />}
         >
-          VIEW DOSSIER
+          VIEW PROFILE
         </RetroButton>
       </RetroCard>
     </section>

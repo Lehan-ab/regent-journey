@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Search, Bell, Menu, X, Compass, Shield, Award, User, Flame } from "lucide-react";
+import { Bell, Menu, X, Flame } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { mockUser } from "@/data/mockUserData";
 
@@ -18,7 +18,7 @@ export default function Navbar() {
     { label: "Home", href: "/home" },
     { label: "Journey", href: "/journey" },
     { label: "Missions", href: "/missions" },
-    { label: "Achievements", href: "/achievements" },
+    { label: "Badges", href: "/achievements" },
     { label: "Profile", href: "/profile" },
   ];
 
@@ -35,10 +35,10 @@ export default function Navbar() {
           </div>
 
           <div className="flex flex-col">
-            <span className="font-pixel font-bold text-base sm:text-lg text-white tracking-wide group-hover:text-regent-blue transition-colors">
+            <span className="font-pixel font-bold text-base sm:text-lg text-white tracking-wide group-hover:text-regent-blue transition-colors leading-none">
               REGENT JOURNEY
             </span>
-            <span className="text-[10px] text-text-muted hidden sm:inline-block -mt-1 tracking-wider uppercase">
+            <span className="text-[9px] text-text-muted hidden sm:inline-block tracking-wider uppercase mt-1">
               RAC Seethawaka Regent
             </span>
           </div>
@@ -49,7 +49,7 @@ export default function Navbar() {
           <div className="flex items-center gap-3">
             <Link
               href="/home"
-              className="px-4 py-2 bg-regent-blue hover:bg-blue-400 text-[#02091F] font-pixel text-xs font-bold uppercase tracking-wider border-2 border-[#0c5784] shadow-retro-blue transition-all"
+              className="px-3.5 py-1.5 bg-regent-blue hover:bg-blue-400 text-[#02091F] font-pixel text-xs font-bold uppercase tracking-wider border-2 border-[#0c5784] shadow-retro-blue transition-all"
             >
               ENTER REALM →
             </Link>
@@ -64,7 +64,7 @@ export default function Navbar() {
                   <Link
                     key={link.href}
                     href={link.href}
-                    className={`px-3.5 py-1.5 font-pixel text-xs tracking-wider uppercase transition-all duration-150 border-2 ${
+                    className={`px-3 py-1 font-pixel text-xs tracking-wider uppercase transition-all duration-150 border-2 ${
                       isActive
                         ? "bg-[#071331] text-regent-blue border-regent-blue shadow-[0_2px_0_#0c5784]"
                         : "text-text-secondary border-transparent hover:text-white hover:border-border-card hover:bg-background-card/50"
@@ -79,9 +79,9 @@ export default function Navbar() {
             {/* Right: Actions */}
             <div className="flex items-center gap-2 sm:gap-2.5">
               {/* Streak Indicator */}
-              <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 bg-[#071331] border-2 border-border-card text-xs font-pixel">
+              <div className="hidden sm:flex items-center gap-1 px-2.5 py-1 bg-[#071331] border-2 border-border-card text-xs font-pixel">
                 <Flame className="w-3.5 h-3.5 text-orange-400 fill-orange-400" />
-                <span className="text-white font-bold">{mockUser.streak}</span>
+                <span className="text-white font-bold">{mockUser.streak}D</span>
               </div>
 
               {/* Notifications Button */}
@@ -102,15 +102,15 @@ export default function Navbar() {
                       initial={{ opacity: 0, y: 10, scale: 0.95 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                      className="absolute right-0 mt-2 w-72 bg-background-card border-2 border-border-card p-3 shadow-retro-card z-50 text-xs"
+                      className="absolute right-0 mt-2 w-72 bg-[#071331] border-2 border-border-card p-3 shadow-retro-card z-50 text-xs"
                     >
-                      <div className="flex items-center justify-between pb-2 mb-2 border-b border-border-card">
+                      <div className="flex items-center justify-between pb-1.5 mb-2 border-b border-border-card">
                         <span className="font-pixel font-bold text-regent-gold">
                           DIRECTIVES
                         </span>
                         <button
                           onClick={() => setShowNotificationToast(false)}
-                          className="text-text-secondary hover:text-white"
+                          className="text-text-secondary hover:text-white px-1"
                         >
                           ✕
                         </button>
@@ -118,7 +118,7 @@ export default function Navbar() {
                       <div className="space-y-2">
                         <div className="p-2 bg-[#02091F] border border-border-card">
                           <p className="text-white font-medium">Chapter 1 in Progress</p>
-                          <p className="text-[11px] text-text-secondary mt-0.5">
+                          <p className="text-[11px] text-text-secondary mt-0.5 leading-relaxed">
                             You are at Rotary Roots! Complete &ldquo;Service Above Self&rdquo; to unlock Rotaract Harbor.
                           </p>
                         </div>
@@ -148,7 +148,7 @@ export default function Navbar() {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            className="md:hidden bg-[#050F2D] border-b-2 border-border-card px-4 py-4 space-y-2"
+            className="md:hidden bg-[#050F2D] border-b-2 border-border-card px-4 py-3 space-y-1.5"
           >
             {navLinks.map((link) => {
               const isActive = pathname === link.href;

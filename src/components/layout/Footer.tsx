@@ -1,6 +1,6 @@
 import React from "react";
 import Link from "next/link";
-import { Sparkles, Mountain, Compass, Shield } from "lucide-react";
+import { Sparkles } from "lucide-react";
 
 export default function Footer() {
   return (
@@ -16,7 +16,7 @@ export default function Footer() {
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-6 pb-20 md:pb-8">
         <div className="flex flex-col md:flex-row items-center justify-between gap-6 pb-6 border-b border-border-card/60">
           {/* Brand & Crest */}
           <div className="flex items-center gap-3.5 text-center md:text-left">
@@ -49,12 +49,12 @@ export default function Footer() {
         </div>
 
         {/* Bottom Slogan & World Links */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 text-[11px] text-text-muted">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-5 text-[11px] text-text-muted">
           <p className="font-pixel text-[11px] text-regent-blue tracking-wide">
             DRIVEN BY PURPOSE. DEFINED BY IMPACT.
           </p>
 
-          <div className="flex items-center gap-4 font-pixel text-[10px] text-text-secondary">
+          <div className="flex items-center gap-4 font-pixel text-[10px] text-text-secondary flex-wrap justify-center">
             <Link href="/" className="hover:text-regent-blue transition-colors">
               HOME
             </Link>
