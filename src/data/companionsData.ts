@@ -1,0 +1,227 @@
+import { CompanionInfo, CompanionId } from "@/types/player";
+
+export const COMPANIONS: Record<CompanionId, CompanionInfo> = {
+  nova: {
+    id: "nova",
+    name: "NOVA",
+    title: "THE WISE GUIDE",
+    archetype: "Wise Guide",
+    type: "Magical Owl Companion",
+    tagline: "Mystic Lorekeeper & Scholar",
+    motto: "“Knowledge lights the path ahead.”",
+    personality: ["Thoughtful", "Intelligent", "Calm", "Curious", "Supportive"],
+    keyTraits: ["Curious", "Thoughtful", "Supportive"],
+    role: "Helps you understand Rotary roots, learn Regent traditions, explore club history, master lessons, and discover hidden knowledge.",
+    description:
+      "A scholarly magical owl with brilliant starry-indigo plumage, luminous golden eyes, and a miniature scroll satchel. Nova illuminates the path of wisdom and tradition.",
+    visualSummary:
+      "Scholarly owl with deep starry-indigo feathers, luminous golden eyes, leather scroll satchel, and maroon trim.",
+    introDialogue: [
+      "“Welcome, Explorer.”",
+      "“Every great journey begins by understanding where you came from.”",
+      "“Knowledge lights the path ahead.”",
+    ],
+    personalizedGreetingTemplate: "“Welcome, {name}. Every great journey begins with curiosity.”",
+    gatewayDialogue: {
+      lines: [
+        "“Explorer profile complete. Companion selected. Interests recorded.”",
+        "“There’s only one problem: you still don’t know what Rotaract actually is.”",
+        "“Fortunately… the first road starts with the roots.”",
+      ],
+      playerPrompts: ["“What problem?”", "“Show me the roots.”"],
+      finalLines: [
+        "“Archival records indicate a 100% chance of greatness.”",
+        "“Proceed through the Gateway, Explorer.”",
+      ],
+    },
+    homeGreetings: [
+      "“Welcome back, {name}. There is much knowledge to uncover today.”",
+      "“Rotary Roots contains the foundational philosophy of service, {name}.”",
+      "“According to my archives, completing your next lesson will yield optimal XP, {name}.”",
+      "“The seven avenues represent distinct disciplines. We shall master them all in time.”",
+      "“Curiosity is the mark of a true Regent, {name}.”",
+    ],
+    themeColor: "#20A9F6",
+    accentColor: "#FFC719",
+  },
+  raya: {
+    id: "raya",
+    name: "RAYA",
+    title: "THE ADVENTURE GUIDE",
+    archetype: "Adventure Guide",
+    type: "Forest Fox Companion",
+    tagline: "Bold & Adventurous Scout",
+    motto: "“The next adventure is always waiting.”",
+    personality: ["Energetic", "Enthusiastic", "Adventurous", "Playful", "Motivational"],
+    keyTraits: ["Energetic", "Adventurous", "Motivated"],
+    role: "Helps you stay motivated, complete quests, jump into community projects, explore new avenues, and discover exciting experiences.",
+    description:
+      "A spirited forest fox with large expressive ears, a lush emerald leaf tail, and a signature Regent maroon scarf. Raya leaps boldly into uncharted territory.",
+    visualSummary:
+      "Fox spirit with fiery golden-amber fur, large expressive ears, emerald leaf tail, and deep maroon scarf.",
+    introDialogue: [
+      "“Finally! I was wondering when you were going to arrive.”",
+      "“Come on, Explorer — we have a whole Realm to discover!”",
+      "“The next adventure is always waiting.”",
+    ],
+    personalizedGreetingTemplate: "“There you are, {name}! I hope you're ready for an adventure.”",
+    gatewayDialogue: {
+      lines: [
+        "“Ready?”",
+        "“No idea where this path leads. That’s the fun part!”",
+        "“Come on. Rotary Roots is this way!”",
+      ],
+      playerPrompts: ["“For what?”", "“Lead the way!”"],
+      finalLines: [
+        "“The gates of Seethawaka are opening for us!”",
+        "“Let’s make our mark in this realm!”",
+      ],
+    },
+    homeGreetings: [
+      "“{name}, Rotary Roots is waiting!”",
+      "“Hey {name}! The sun is high over Seethawaka. What are we exploring first?”",
+      "“Every step we take gets us closer to Pathfinder rank, {name}!”",
+      "“I smell adventure near the botanical groves. Let’s move!”",
+      "“Ready to jump into our next mission, {name}?”",
+    ],
+    themeColor: "#EA580C",
+    accentColor: "#FFC719",
+  },
+  kai: {
+    id: "kai",
+    name: "KAI",
+    title: "THE STRATEGIST",
+    archetype: "Strategist",
+    type: "Forest Spirit Deer",
+    tagline: "Calm & Purposeful Leader",
+    motto: "“Every great journey begins with a plan.”",
+    personality: ["Practical", "Focused", "Reliable", "Strategic", "Confident"],
+    keyTraits: ["Strategic", "Reliable", "Focused"],
+    role: "Helps you understand leadership, organize impactful projects, develop practical skills, master club systems, and complete missions efficiently.",
+    description:
+      "A serene forest spirit deer with glowing golden antler tips, starry celestial markings, and a carved Regent medallion. Kai brings calm clarity and strategic focus.",
+    visualSummary:
+      "Forest deer spirit with moss-green & timber coats, glowing celestial runes, budding antlers, and a Regent medallion.",
+    introDialogue: [
+      "“Good. You're here.”",
+      "“Now let's prepare for what comes next.”",
+      "“Every great journey begins with a plan.”",
+    ],
+    personalizedGreetingTemplate: "“Good to meet you, {name}. Let's prepare for the journey ahead.”",
+    gatewayDialogue: {
+      lines: [
+        "“Before you decide where you belong…”",
+        "“…it helps to understand where the journey began.”",
+        "“Your first path leads to Rotary Roots.”",
+      ],
+      playerPrompts: ["“Where do we start?”", "“I am ready.”"],
+      finalLines: [
+        "“The ancient stone recognizes your resolve.”",
+        "“Walk forward with purpose into Rotary Roots.”",
+      ],
+    },
+    homeGreetings: [
+      "“Your first path is open, {name}.”",
+      "“Take a breath, {name}. Real impact happens one deliberate action at a time.”",
+      "“The roots of Seethawaka run deep, {name}. Let us learn from them today.”",
+      "“I see steady growth in your spirit with every task you complete.”",
+      "“Whenever you are ready, {name}, Rotary Roots is peaceful and welcoming.”",
+    ],
+    themeColor: "#10B981",
+    accentColor: "#FFC719",
+  },
+};
+
+export const INTEREST_OPTIONS = [
+  {
+    id: "service",
+    title: "COMMUNITY SERVICE",
+    description: "I want to help communities and create sustainable social impact.",
+    category: "Impact",
+    iconName: "HeartHandshake",
+    badgeLabel: "Heartland",
+  },
+  {
+    id: "leadership",
+    title: "LEADERSHIP",
+    description: "I want to build confidence, lead teams, and inspire others.",
+    category: "Growth",
+    iconName: "Crown",
+    badgeLabel: "Director",
+  },
+  {
+    id: "professional",
+    title: "PROFESSIONAL GROWTH",
+    description: "I want to develop workplace skills, network, and advance my career.",
+    category: "Career",
+    iconName: "Briefcase",
+    badgeLabel: "Forge",
+  },
+  {
+    id: "creativity",
+    title: "CREATIVITY & MEDIA",
+    description: "I enjoy design, content creation, writing, photography, or digital media.",
+    category: "Design",
+    iconName: "Palette",
+    badgeLabel: "Spire",
+  },
+  {
+    id: "international",
+    title: "INTERNATIONAL CONNECTIONS",
+    description: "I want to meet people and experience cultures beyond my community.",
+    category: "Global",
+    iconName: "Globe",
+    badgeLabel: "Far Harbor",
+  },
+  {
+    id: "sports",
+    title: "SPORTS & RECREATION",
+    description: "I enjoy sports, fitness challenges, tournaments, and active fellowship.",
+    category: "Activity",
+    iconName: "Trophy",
+    badgeLabel: "Arena",
+  },
+  {
+    id: "finance",
+    title: "FINANCE & ENTREPRENEURSHIP",
+    description: "I’m interested in fundraising, business ventures, budgeting, or startups.",
+    category: "Business",
+    iconName: "Coins",
+    badgeLabel: "Treasury",
+  },
+  {
+    id: "fellowship",
+    title: "FRIENDSHIP & FELLOWSHIP",
+    description: "I want to make lifelong friends and build meaningful bonds with members.",
+    category: "Social",
+    iconName: "Users",
+    badgeLabel: "Hearth",
+  },
+  {
+    id: "events",
+    title: "EVENT PLANNING",
+    description: "I like organizing experiences, coordinating logistics, and hosting meets.",
+    category: "Ops",
+    iconName: "CalendarDays",
+    badgeLabel: "Expedition",
+  },
+  {
+    id: "technology",
+    title: "TECHNOLOGY & INNOVATION",
+    description: "I enjoy building digital solutions, coding, solving tech problems, and experimenting.",
+    category: "Tech",
+    iconName: "Cpu",
+    badgeLabel: "Guild",
+  },
+];
+
+export const PRIMARY_GOAL_OPTIONS = [
+  "Leadership experience",
+  "New friendships & fellowship",
+  "Career opportunities & skills",
+  "Community service & impact",
+  "Confidence in public speaking",
+  "International connections",
+  "Project management experience",
+  "Something completely new",
+];

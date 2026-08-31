@@ -9,8 +9,8 @@ import { cn } from "@/lib/utils";
 export default function BottomNav() {
   const pathname = usePathname();
 
-  // Hide bottom nav on start screen
-  if (pathname === "/") {
+  // Hide bottom nav on start screen and onboarding
+  if (pathname === "/" || pathname.startsWith("/onboarding")) {
     return null;
   }
 

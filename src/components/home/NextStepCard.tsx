@@ -4,9 +4,15 @@ import React from "react";
 import { ArrowRight, BookOpen, Sparkles } from "lucide-react";
 import RetroCard from "@/components/ui/RetroCard";
 import RetroButton from "@/components/ui/RetroButton";
-import { mockUser } from "@/data/mockUserData";
+import { usePlayer } from "@/context/PlayerContext";
 
 export default function NextStepCard() {
+  const { player } = usePlayer();
+
+  const chapterLabel = player.currentChapterLabel || "CHAPTER 1";
+  const journeyTitle = player.currentWorld || "Rotary Roots";
+  const nextLesson = "Service Above Self";
+
   return (
     <RetroCard
       headerTag="YOUR NEXT STEP"
@@ -18,14 +24,14 @@ export default function NextStepCard() {
         <div className="space-y-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="font-pixel text-[11px] sm:text-xs text-regent-gold font-bold uppercase tracking-wider truncate">
-              {mockUser.currentChapterLabel}: {mockUser.currentJourney.toUpperCase()}
+              {chapterLabel}: {journeyTitle.toUpperCase()}
             </span>
             <span className="text-text-muted text-[11px] font-pixel shrink-0">• Lesson 3</span>
           </div>
 
           <h3 className="font-pixel text-base sm:text-lg font-bold text-white tracking-wide flex items-center gap-2 truncate">
             <BookOpen className="w-4 h-4 text-regent-blue shrink-0" />
-            <span className="truncate">{mockUser.nextLesson}</span>
+            <span className="truncate">{nextLesson}</span>
           </h3>
 
           <p className="font-body text-xs text-text-secondary line-clamp-2">

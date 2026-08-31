@@ -1,10 +1,12 @@
 "use client";
 
 import React, { useState } from "react";
-import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Sparkles, Compass, Shield, Award } from "lucide-react";
 import RetroButton from "./RetroButton";
+import PixelCompanion from "@/components/companion/PixelCompanion";
+import { usePlayer } from "@/context/PlayerContext";
+import { COMPANIONS } from "@/data/companionsData";
 
 interface AskNovaModalProps {
   isOpen: boolean;
@@ -12,7 +14,10 @@ interface AskNovaModalProps {
 }
 
 export default function AskNovaModal({ isOpen, onClose }: AskNovaModalProps) {
+  const { player } = usePlayer();
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
+
+  const companion = COMPANIONS[player.companion] || COMPANIONS.nova;
 
   const tips = [
     {
@@ -74,27 +79,27 @@ export default function AskNovaModal({ isOpen, onClose }: AskNovaModalProps) {
               <X className="w-4 h-4" />
             </button>
 
-            {/* Header with Nova */}
+            {/* Header with Companion */}
             <div className="flex items-center gap-3.5 mb-4 border-b border-border-card pb-3.5">
-              <div className="relative w-12 h-12 sm:w-14 sm:h-14 shrink-0 border-2 border-regent-gold bg-[#02091F] overflow-hidden">
-                <Image
-                  src="/images/nova_companion.jpg"
-                  alt="Nova companion"
-                  fill
-                  className="object-cover"
+              <div className="relative w-12 h-12 sm:w-14 sm:h-14 shrink-0 border-2 border-regent-gold bg-[#02091F] p-1 flex items-center justify-center">
+                <PixelCompanion
+                  companionId={companion.id}
+                  emotion="happy"
+                  size="full"
+                  animate={true}
                 />
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <h3 className="font-pixel text-base sm:text-lg text-white font-bold">
-                    NOVA
+                  <h3 className="font-pixel text-base sm:text-lg text-white font-bold uppercase">
+                    {companion.name}
                   </h3>
-                  <span className="bg-regent-maroon px-2 py-0.5 text-[9px] font-pixel text-regent-gold border border-red-950 font-bold">
-                    MYSTIC GUIDE
+                  <span className="bg-regent-maroon px-2 py-0.5 text-[9px] font-pixel text-regent-gold border border-red-950 font-bold uppercase">
+                    {companion.tagline}
                   </span>
                 </div>
                 <p className="text-xs text-text-secondary truncate">
-                  &ldquo;What wisdom do you seek today, Explorer?&rdquo;
+                  &ldquo;What guidance do you seek today, {player.name || "Explorer"}?&rdquo;
                 </p>
               </div>
             </div>

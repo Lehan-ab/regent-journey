@@ -12,9 +12,13 @@ import {
   Landmark,
 } from "lucide-react";
 import RetroButton from "@/components/ui/RetroButton";
-import { mockUser } from "@/data/mockUserData";
+import PixelAvatar from "@/components/avatar/PixelAvatar";
+import PixelCompanion from "@/components/companion/PixelCompanion";
+import { usePlayer } from "@/context/PlayerContext";
 
 export default function StartPage() {
+  const { player, isHydrated } = usePlayer();
+
   const scrollToStory = () => {
     const el = document.getElementById("story-overview");
     if (el) {
@@ -22,7 +26,23 @@ export default function StartPage() {
     }
   };
 
-  const hasProgress = mockUser.xp > 0 || mockUser.journeyProgress > 0;
+  const hasProgress = player.onboardingComplete || player.xp > 0;
+
+  const startHref = !isHydrated
+    ? "/onboarding"
+    : player.onboardingComplete
+    ? "/home"
+    : player.onboardingStep
+    ? `/onboarding?step=${player.onboardingStep}`
+    : "/onboarding";
+
+  const buttonText = !isHydrated
+    ? "BEGIN YOUR JOURNEY"
+    : player.onboardingComplete
+    ? "CONTINUE YOUR JOURNEY"
+    : player.xp > 0
+    ? "RESUME ONBOARDING"
+    : "BEGIN YOUR JOURNEY";
 
   return (
     <div className="w-full">
@@ -89,10 +109,10 @@ export default function StartPage() {
           </div>
 
           <Link
-            href="/home"
+            href={startHref}
             className="px-3 py-1 bg-regent-maroon text-white border border-red-950 font-pixel text-[10px] sm:text-xs uppercase hover:bg-regent-blue hover:text-black transition-colors"
           >
-            ENTER REALM →
+            {player.onboardingComplete ? "ENTER REALM →" : "ONBOARDING →"}
           </Link>
         </div>
 
@@ -139,7 +159,7 @@ export default function StartPage() {
             Explore the movement. Discover where you belong. Experience real impact. Begin your path toward becoming a Regent.
           </motion.p>
 
-          {/* Foreground Characters: Explorer Avatar + Nova Companion looking toward the world */}
+          {/* Foreground Characters: Explorer Avatar + Chosen Companion looking toward the world */}
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -152,32 +172,34 @@ export default function StartPage() {
               transition={{ repeat: Infinity, duration: 2.8, ease: "easeInOut" }}
               className="flex flex-col items-center"
             >
-              <div className="relative w-14 h-14 sm:w-16 sm:h-16 border-2 border-regent-gold bg-[#02091F] overflow-hidden shadow-[0_0_12px_#FFC719]">
-                <Image
-                  src={mockUser.avatarUrl}
-                  alt="Regent Explorer Avatar"
-                  fill
-                  className="object-cover"
+              <div className="relative w-16 h-16 sm:w-20 sm:h-20 border-2 border-regent-gold bg-[#02091F] p-1 shadow-[0_0_16px_#FFC719] flex items-center justify-center">
+                <PixelAvatar
+                  explorerId={player.explorerId}
+                  config={player.avatar}
+                  variant="portrait"
+                  size="full"
+                  animate={false}
                 />
               </div>
-              <div className="w-12 h-1.5 rounded-full bg-black/80 blur-[1px] mt-1" />
+              <div className="w-14 h-1.5 rounded-full bg-black/80 blur-[1px] mt-1" />
             </motion.div>
 
-            {/* Nova Companion */}
+            {/* Companion */}
             <motion.div
               animate={{ y: [0, -3, 0] }}
               transition={{ repeat: Infinity, duration: 2.2, ease: "easeInOut", delay: 0.3 }}
               className="flex flex-col items-center"
             >
-              <div className="relative w-10 h-10 sm:w-12 sm:h-12 border border-border-card bg-[#02091F] overflow-hidden shadow-md">
-                <Image
-                  src={mockUser.companionUrl}
-                  alt="Nova Companion"
-                  fill
-                  className="object-cover"
+              <div className="relative w-14 h-14 sm:w-16 sm:h-16 border-2 border-regent-gold bg-[#02091F] p-1 shadow-[0_0_12px_rgba(255,199,25,0.3)] flex items-center justify-center">
+                <PixelCompanion
+                  companionId={player.companion || "nova"}
+                  emotion="idle"
+                  variant="portrait"
+                  size="full"
+                  animate={true}
                 />
               </div>
-              <div className="w-8 h-1 rounded-full bg-black/70 blur-[1px] mt-1" />
+              <div className="w-12 h-1 rounded-full bg-black/70 blur-[1px] mt-1" />
             </motion.div>
           </motion.div>
 
@@ -191,12 +213,12 @@ export default function StartPage() {
             <RetroButton
               variant="blue"
               size="lg"
-              href="/home"
+              href={startHref}
               icon={<ArrowRight className="w-5 h-5" />}
               iconPosition="right"
               fullWidth
             >
-              {hasProgress ? "CONTINUE YOUR JOURNEY" : "BEGIN YOUR JOURNEY"}
+              {buttonText}
             </RetroButton>
 
             <RetroButton
@@ -288,12 +310,12 @@ export default function StartPage() {
         <RetroButton
           variant="green"
           size="lg"
-          href="/home"
+          href={startHref}
           icon={<ArrowRight className="w-5 h-5" />}
           iconPosition="right"
           className="shadow-retro-green"
         >
-          ENTER THE REALM
+          {player.onboardingComplete ? "ENTER THE REALM" : "BEGIN YOUR JOURNEY"}
         </RetroButton>
       </section>
     </div>

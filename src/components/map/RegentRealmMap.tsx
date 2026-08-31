@@ -14,15 +14,18 @@ import {
 } from "lucide-react";
 import PixelProgressBar from "@/components/ui/PixelProgressBar";
 import LocationDetailPanel from "./LocationDetailPanel";
+import PixelAvatar from "@/components/avatar/PixelAvatar";
+import PixelCompanion from "@/components/companion/PixelCompanion";
 import {
   realmLocations,
   RealmLocation,
   mapSecrets,
   MapSecret,
 } from "@/data/realmMapLocations";
-import { mockUser } from "@/data/mockUserData";
+import { usePlayer } from "@/context/PlayerContext";
 
 export default function RegentRealmMap() {
+  const { player } = usePlayer();
   const [selectedLocation, setSelectedLocation] = useState<RealmLocation | null>(
     realmLocations.find((loc) => loc.status === "CURRENT") || realmLocations[1]
   );
@@ -72,10 +75,10 @@ export default function RegentRealmMap() {
             <span className="text-regent-gold flex items-center gap-1">
               <Sparkles className="w-3 h-3" /> JOURNEY PROGRESS
             </span>
-            <span className="text-white font-bold">{mockUser.journeyProgress}%</span>
+            <span className="text-white font-bold">{player.journeyProgress}%</span>
           </div>
           <PixelProgressBar
-            progress={mockUser.journeyProgress}
+            progress={player.journeyProgress}
             color="green"
             showLabel={false}
             size="sm"
@@ -349,37 +352,39 @@ export default function RegentRealmMap() {
                     </span>
                   </motion.div>
 
-                  {/* Player & Nova Standing at Current World (Rotary Roots) */}
+                  {/* Player & Companion Standing at Current World */}
                   {isCurrent && (
                     <motion.div
-                      animate={{ y: [0, -3, 0] }}
+                      animate={{ y: [0, -4, 0] }}
                       transition={{ repeat: Infinity, duration: 2.4, ease: "easeInOut" }}
-                      className="absolute -top-11 left-1/2 -translate-x-1/2 flex items-end gap-1 pointer-events-none z-30"
+                      className="absolute -top-12 left-1/2 -translate-x-1/2 flex items-end gap-1.5 pointer-events-none z-30"
                     >
-                      {/* Avatar */}
+                      {/* Avatar Mini Sprite */}
                       <div className="flex flex-col items-center">
-                        <div className="relative w-8 h-8 rounded-none border-2 border-regent-gold bg-[#02091F] overflow-hidden shadow-[0_0_8px_#FFC719]">
-                          <Image
-                            src={mockUser.avatarUrl}
-                            alt="Lehan Avatar"
-                            fill
-                            className="object-cover"
+                        <div className="relative w-9 h-10 rounded-none border-2 border-regent-gold bg-[#02091F]/90 p-0.5 shadow-[0_0_10px_#FFC719] flex items-center justify-center">
+                          <PixelAvatar
+                            explorerId={player.explorerId}
+                            config={player.avatar}
+                            variant="mini"
+                            size="full"
+                            animate={true}
                           />
                         </div>
-                        <div className="w-6 h-1 rounded-full bg-black/70 blur-[1px] mt-0.5" />
+                        <div className="w-7 h-1 rounded-full bg-black/70 blur-[1px] mt-0.5" />
                       </div>
 
-                      {/* Nova Companion */}
+                      {/* Chosen Companion Mini Sprite */}
                       <div className="flex flex-col items-center">
-                        <div className="relative w-5 h-5 border border-border-card bg-[#02091F] overflow-hidden">
-                          <Image
-                            src={mockUser.companionUrl}
-                            alt="Nova Companion"
-                            fill
-                            className="object-cover"
+                        <div className="relative w-6 h-6 border border-border-card bg-[#02091F]/90 p-0.5 flex items-center justify-center">
+                          <PixelCompanion
+                            companionId={player.companion || "nova"}
+                            emotion="idle"
+                            variant="mini"
+                            size="full"
+                            animate={true}
                           />
                         </div>
-                        <div className="w-4 h-0.5 rounded-full bg-black/60 blur-[1px] mt-0.5" />
+                        <div className="w-5 h-0.5 rounded-full bg-black/60 blur-[1px] mt-0.5" />
                       </div>
                     </motion.div>
                   )}

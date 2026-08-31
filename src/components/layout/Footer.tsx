@@ -1,8 +1,16 @@
+"use client";
+
 import React from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Sparkles } from "lucide-react";
 
 export default function Footer() {
+  const pathname = usePathname();
+
+  if (pathname.startsWith("/onboarding")) {
+    return null;
+  }
   return (
     <footer className="relative w-full bg-[#050F2D] border-t-2 border-border-card mt-16 text-xs text-text-secondary overflow-hidden">
       {/* Mountain Skyline Silhouette Graphic Layer */}

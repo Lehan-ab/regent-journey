@@ -3,16 +3,24 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell, Menu, X, Flame } from "lucide-react";
+import { Bell, Menu, X, Flame, Compass } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { mockUser } from "@/data/mockUserData";
+import { usePlayer } from "@/context/PlayerContext";
 
 export default function Navbar() {
   const pathname = usePathname();
+  const { player } = usePlayer();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showNotificationToast, setShowNotificationToast] = useState(false);
 
   const isStartScreen = pathname === "/";
+  const isOnboarding = pathname.startsWith("/onboarding");
+
+  const startButtonHref = player.onboardingComplete
+    ? "/home"
+    : player.onboardingStep
+    ? `/onboarding?step=${player.onboardingStep}`
+    : "/onboarding";
 
   const navLinks = [
     { label: "Home", href: "/home" },
@@ -26,7 +34,10 @@ export default function Navbar() {
     <header className="sticky top-0 z-40 w-full bg-[#02091F]/95 backdrop-blur border-b-2 border-border-card">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
         {/* Left: Brand Icon + Title */}
-        <Link href={isStartScreen ? "/" : "/home"} className="flex items-center gap-2.5 group">
+        <Link
+          href={isStartScreen || isOnboarding ? "/" : "/home"}
+          className="flex items-center gap-2.5 group"
+        >
           {/* Custom Regent Crest Emblem */}
           <div className="relative w-9 h-9 bg-regent-maroon border-2 border-regent-gold flex items-center justify-center shadow-[0_2px_0_#400000] group-hover:scale-105 transition-transform">
             <span className="font-pixel-heading text-regent-gold text-sm font-bold">R</span>
@@ -44,14 +55,28 @@ export default function Navbar() {
           </div>
         </Link>
 
-        {/* Start Screen Simplified Navigation */}
-        {isStartScreen ? (
+        {/* Onboarding Mode Header */}
+        {isOnboarding ? (
+          <div className="flex items-center gap-2">
+            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 bg-[#071331] border border-border-card text-regent-gold font-pixel text-xs">
+              <Compass className="w-3.5 h-3.5 animate-spin-slow" />
+              <span>ONBOARDING PROLOGUE</span>
+            </div>
+            <Link
+              href="/"
+              className="px-3 py-1 bg-[#050F2D] border border-border-card hover:border-red-400 text-text-secondary hover:text-white font-pixel text-xs transition-colors"
+            >
+              EXIT TO START
+            </Link>
+          </div>
+        ) : isStartScreen ? (
+          /* Start Screen Simplified Navigation */
           <div className="flex items-center gap-3">
             <Link
-              href="/home"
+              href={startButtonHref}
               className="px-3.5 py-1.5 bg-regent-blue hover:bg-blue-400 text-[#02091F] font-pixel text-xs font-bold uppercase tracking-wider border-2 border-[#0c5784] shadow-retro-blue transition-all"
             >
-              ENTER REALM →
+              {player.onboardingComplete ? "ENTER REALM →" : "BEGIN JOURNEY →"}
             </Link>
           </div>
         ) : (
@@ -81,7 +106,7 @@ export default function Navbar() {
               {/* Streak Indicator */}
               <div className="hidden sm:flex items-center gap-1 px-2.5 py-1 bg-[#071331] border-2 border-border-card text-xs font-pixel">
                 <Flame className="w-3.5 h-3.5 text-orange-400 fill-orange-400" />
-                <span className="text-white font-bold">{mockUser.streak}D</span>
+                <span className="text-white font-bold">{player.streak}D</span>
               </div>
 
               {/* Notifications Button */}

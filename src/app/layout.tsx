@@ -4,6 +4,7 @@ import "./globals.css";
 import Navbar from "@/components/layout/Navbar";
 import BottomNav from "@/components/layout/BottomNav";
 import Footer from "@/components/layout/Footer";
+import { PlayerProvider } from "@/context/PlayerContext";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -40,10 +41,12 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${poppins.variable} ${pixelify.variable} ${pressStart.variable}`}>
       <body className="bg-[#02091F] text-white antialiased min-h-screen flex flex-col selection:bg-regent-blue selection:text-black retro-grid">
-        <Navbar />
-        <main className="flex-1 pb-28 md:pb-16">{children}</main>
-        <Footer />
-        <BottomNav />
+        <PlayerProvider>
+          <Navbar />
+          <main className="flex-1 pb-28 md:pb-16">{children}</main>
+          <Footer />
+          <BottomNav />
+        </PlayerProvider>
       </body>
     </html>
   );
