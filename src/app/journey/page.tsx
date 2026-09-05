@@ -15,14 +15,18 @@ import {
   Shield,
   Landmark,
   Layers,
+  ArrowRight,
 } from "lucide-react";
 import RetroCard from "@/components/ui/RetroCard";
 import RetroButton from "@/components/ui/RetroButton";
 import PixelProgressBar from "@/components/ui/PixelProgressBar";
 import WorldDivider from "@/components/ui/WorldDivider";
 import { sevenAvenueRealms, realmLocations, RealmLocation } from "@/data/realmMapLocations";
+import { usePlayer } from "@/context/PlayerContext";
+import { CHAPTERS_DATA } from "@/data/chaptersData";
 
 interface LessonNode {
+  id?: string;
   title: string;
   completed: boolean;
   current?: boolean;
@@ -33,97 +37,90 @@ interface ChapterData extends RealmLocation {
 }
 
 export default function JourneyPage() {
+  const { player, isHydrated, isChapterUnlocked, isLessonCompleted } = usePlayer();
   const [activeNpcDialogue, setActiveNpcDialogue] = useState<{
     name: string;
     quote: string;
   } | null>(null);
 
-  // Map canonical chapters with their lessons
-  const canonicalChapters: ChapterData[] = [
-    {
-      ...realmLocations[0], // PROLOGUE: The Gateway
-      lessons: [
-        { title: "Welcome to the Realm of Regent", completed: true },
-        { title: "The Prospect Explorer Pathway", completed: true },
-      ],
-    },
-    {
-      ...realmLocations[1], // CHAPTER 1: Rotary Roots
-      lessons: [
-        { title: "What is Rotary International?", completed: true },
-        { title: "The Four-Way Test", completed: true },
-        { title: "Service Above Self", completed: false, current: true },
-        { title: "The Birth of Rotaract", completed: false },
-      ],
-    },
-    {
-      ...realmLocations[2], // CHAPTER 2: Rotaract Harbor
-      lessons: [
-        { title: "The Global Rotaract Movement", completed: false },
-        { title: "Twin Clubs & Global Fellowship", completed: false },
-        { title: "District 3220 & Sri Lankan Network", completed: false },
-      ],
-    },
-    {
-      ...realmLocations[3], // CHAPTER 3: The Regent Odyssey
-      lessons: [
-        { title: "Our Charter Story & Founders", completed: false },
-        { title: "Regent Culture, Identity & Pride", completed: false },
-        { title: "Signature Club Initiatives", completed: false },
-      ],
-    },
-    {
-      ...realmLocations[4], // CHAPTER 4: The Seven Realms of Service
-      lessons: [
-        { title: "Heartland: Community Service", completed: false },
-        { title: "The Hearth: Club Service", completed: false },
-        { title: "The Forge: Professional Development", completed: false },
-        { title: "Far Harbor: International Service", completed: false },
-        { title: "Signal Spire: Public Relations", completed: false },
-        { title: "Grand Arena: Sports & Recreation", completed: false },
-        { title: "Treasury Quarter: Finance", completed: false },
-      ],
-    },
-    {
-      ...realmLocations[5], // CHAPTER 5: Project Forge
-      lessons: [
-        { title: "Drafting the Project Blueprint", completed: false },
-        { title: "Resource Mobilization & Sponsorship", completed: false },
-        { title: "PR, Media & Event Logistics", completed: false },
-      ],
-    },
-    {
-      ...realmLocations[6], // CHAPTER 6: The Regent Code
-      lessons: [
-        { title: "Meeting Protocols & Standing Orders", completed: false },
-        { title: "Leadership Ethics & The Four-Way Test", completed: false },
-        { title: "Constitutional Bylaws & Voting", completed: false },
-      ],
-    },
-    {
-      ...realmLocations[7], // CHAPTER 7: Grand Archive
-      lessons: [
-        { title: "ROTA 101: The Official Handbook", completed: false },
-        { title: "District Citations & Awards Criteria", completed: false },
-        { title: "Club Administration Archive", completed: false },
-      ],
-    },
-    {
-      ...realmLocations[8], // CHAPTER 8: Impact Frontier
-      lessons: [
-        { title: "Attending Your First Club Assembly", completed: false },
-        { title: "Joining an On-Ground Community Camp", completed: false },
-        { title: "Prospect Action Directives", completed: false },
-      ],
-    },
-    {
-      ...realmLocations[9], // CHAPTER 9: Membership Citadel
-      lessons: [
-        { title: "The Regent Member Oath", completed: false },
-        { title: "Official Pinning & Induction Ceremony", completed: false },
-      ],
-    },
-  ];
+  // Fallback lesson definitions for chapters 5-9 if not in CHAPTERS_DATA yet
+  const fallbackLessons: Record<string, { id: string; title: string }[]> = {
+    "loc-project-forge": [
+      { id: "lesson-5-1", title: "Drafting the Project Blueprint" },
+      { id: "lesson-5-2", title: "Resource Mobilization & Sponsorship" },
+      { id: "lesson-5-3", title: "PR, Media & Event Logistics" },
+    ],
+    "loc-codewood": [
+      { id: "lesson-6-1", title: "Meeting Protocols & Standing Orders" },
+      { id: "lesson-6-2", title: "Leadership Ethics & The Four-Way Test" },
+      { id: "lesson-6-3", title: "Constitutional Bylaws & Voting" },
+    ],
+    "loc-grand-archive": [
+      { id: "lesson-7-1", title: "ROTA 101: The Official Handbook" },
+      { id: "lesson-7-2", title: "District Citations & Awards Criteria" },
+      { id: "lesson-7-3", title: "Club Administration Archive" },
+    ],
+    "loc-impact-frontier": [
+      { id: "lesson-8-1", title: "Attending Your First Club Assembly" },
+      { id: "lesson-8-2", title: "Joining an On-Ground Community Camp" },
+      { id: "lesson-8-3", title: "Prospect Action Directives" },
+    ],
+    "loc-membership-citadel": [
+      { id: "lesson-9-1", title: "The Regent Member Oath" },
+      { id: "lesson-9-2", title: "Official Pinning & Induction Ceremony" },
+    ],
+  };
+
+  // Build dynamic chapters list
+  const canonicalChapters: ChapterData[] = realmLocations.map((loc) => {
+    const chapterDetails = CHAPTERS_DATA[loc.id];
+    const isCompleted = isHydrated ? player.completedWorlds?.includes(loc.id) : loc.status === "COMPLETED";
+    const isUnlocked = isHydrated ? isChapterUnlocked(loc.id) : (loc.status === "COMPLETED" || loc.status === "CURRENT");
+    const status: "COMPLETED" | "CURRENT" | "LOCKED" = isCompleted
+      ? "COMPLETED"
+      : isUnlocked
+      ? "CURRENT"
+      : "LOCKED";
+
+    let rawLessons: { id: string; title: string }[] = [];
+    if (chapterDetails) {
+      rawLessons = chapterDetails.lessons.map((l) => ({ id: l.id, title: l.title }));
+    } else if (fallbackLessons[loc.id]) {
+      rawLessons = fallbackLessons[loc.id];
+    } else {
+      rawLessons = [
+        { id: `${loc.id}-1`, title: "Chapter Overview" },
+        { id: `${loc.id}-2`, title: "Core Principles" },
+      ];
+    }
+
+    let foundFirstIncomplete = false;
+    const lessons: LessonNode[] = rawLessons.map((l) => {
+      const completed = isHydrated ? isLessonCompleted(l.id) : false;
+      let current = false;
+      if (!completed && !foundFirstIncomplete && status === "CURRENT") {
+        current = true;
+        foundFirstIncomplete = true;
+      }
+      return {
+        id: l.id,
+        title: l.title,
+        completed,
+        current,
+      };
+    });
+
+    const lessonsCompleted = lessons.filter((l) => l.completed).length;
+    const lessonsTotal = lessons.length;
+
+    return {
+      ...loc,
+      status,
+      lessonsTotal,
+      lessonsCompleted,
+      lessons,
+    };
+  });
 
   return (
     <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 pt-4 sm:pt-6 pb-12">
@@ -149,7 +146,7 @@ export default function JourneyPage() {
           REGENT ADVENTURE PATH
         </h1>
         <p className="font-body text-xs sm:text-sm text-text-secondary mt-2 max-w-xl mx-auto leading-relaxed">
-          Journey through the 9 canonical chapters and prologue. Complete quests across all 7 avenues to level up and prepare for official induction.
+          Journey through the 9 canonical chapters and prologue. Read rich illustrated lessons, engage with your companion, pass knowledge checks, and prepare for official induction into RACSR.
         </p>
       </div>
 
@@ -308,11 +305,18 @@ export default function JourneyPage() {
                     <div className="flex items-center justify-between text-xs font-pixel mb-1">
                       <span className="text-regent-blue">CHAPTER PROGRESS</span>
                       <span className="text-white font-bold">
-                        {Math.round((chapter.lessonsCompleted / chapter.lessonsTotal) * 100)}% COMPLETE
+                        {chapter.lessonsTotal > 0
+                          ? Math.round((chapter.lessonsCompleted / chapter.lessonsTotal) * 100)
+                          : 0}
+                        % COMPLETE
                       </span>
                     </div>
                     <PixelProgressBar
-                      progress={(chapter.lessonsCompleted / chapter.lessonsTotal) * 100}
+                      progress={
+                        chapter.lessonsTotal > 0
+                          ? (chapter.lessonsCompleted / chapter.lessonsTotal) * 100
+                          : 0
+                      }
                       color="blue"
                       showLabel={false}
                       size="sm"
@@ -324,39 +328,56 @@ export default function JourneyPage() {
                 <div className="space-y-1.5 mb-4">
                   <div className="flex items-center justify-between text-[10px] font-pixel text-text-muted">
                     <span>QUEST NODES:</span>
-                    <span>{chapter.lessonsTotal} LESSONS</span>
+                    <span>
+                      {chapter.lessonsCompleted} / {chapter.lessonsTotal} COMPLETED
+                    </span>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-                    {chapter.lessons.map((lesson, lIdx) => (
-                      <div
-                        key={lIdx}
-                        className={`p-2 border flex items-center justify-between text-xs min-w-0 ${
-                          lesson.completed
-                            ? "bg-[#04152e] border-regent-blue/40 text-text-secondary"
-                            : lesson.current
-                            ? "bg-[#091f42] border-regent-blue text-white font-medium shadow-[0_0_8px_rgba(32,169,246,0.3)]"
-                            : "bg-[#02091F] border-border-card text-text-muted"
-                        }`}
-                      >
-                        <span className="flex items-center gap-2 truncate">
-                          {lesson.completed ? (
-                            <CheckCircle2 className="w-3.5 h-3.5 text-regent-green shrink-0" />
-                          ) : lesson.current ? (
-                            <Play className="w-3.5 h-3.5 text-regent-blue fill-regent-blue shrink-0 animate-pulse" />
-                          ) : (
-                            <Lock className="w-3 h-3 text-text-muted shrink-0" />
-                          )}
-                          <span className="truncate">{lesson.title}</span>
-                        </span>
-
-                        {lesson.current && (
-                          <span className="font-pixel text-[8px] text-regent-blue uppercase shrink-0 font-bold ml-1">
-                            ACTIVE
+                    {chapter.lessons.map((lesson, lIdx) => {
+                      const isClickable = chapter.status !== "LOCKED";
+                      const content = (
+                        <div
+                          className={`p-2 border flex items-center justify-between text-xs min-w-0 transition-all ${
+                            lesson.completed
+                              ? "bg-[#04152e] border-regent-blue/40 text-text-secondary"
+                              : lesson.current
+                              ? "bg-[#091f42] border-regent-blue text-white font-medium shadow-[0_0_8px_rgba(32,169,246,0.3)]"
+                              : "bg-[#02091F] border-border-card text-text-muted"
+                          } ${isClickable ? "hover:border-regent-gold cursor-pointer" : ""}`}
+                        >
+                          <span className="flex items-center gap-2 truncate">
+                            {lesson.completed ? (
+                              <CheckCircle2 className="w-3.5 h-3.5 text-regent-green shrink-0" />
+                            ) : lesson.current ? (
+                              <Play className="w-3.5 h-3.5 text-regent-blue fill-regent-blue shrink-0 animate-pulse" />
+                            ) : (
+                              <Lock className="w-3 h-3 text-text-muted shrink-0" />
+                            )}
+                            <span className="truncate">{lesson.title}</span>
                           </span>
-                        )}
-                      </div>
-                    ))}
+
+                          {lesson.current && (
+                            <span className="font-pixel text-[8px] text-regent-blue uppercase shrink-0 font-bold ml-1">
+                              ACTIVE
+                            </span>
+                          )}
+                        </div>
+                      );
+
+                      if (isClickable) {
+                        return (
+                          <Link
+                            key={lIdx}
+                            href={`/journey/${chapter.id}${lesson.id ? `?lesson=${lesson.id}` : ""}`}
+                          >
+                            {content}
+                          </Link>
+                        );
+                      }
+
+                      return <div key={lIdx}>{content}</div>;
+                    })}
                   </div>
                 </div>
 
@@ -364,19 +385,27 @@ export default function JourneyPage() {
                 <div className="pt-2.5 border-t border-border-card flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
                   <div className="text-[10px] font-pixel text-text-muted flex items-center gap-1">
                     <Shield className="w-3.5 h-3.5 text-regent-gold shrink-0" />
-                    <span>BADGE: <strong>{chapter.badgeReward}</strong></span>
+                    <span>
+                      BADGE: <strong>{chapter.badgeReward}</strong>
+                    </span>
                   </div>
 
                   {chapter.status === "CURRENT" ? (
                     <RetroButton
                       variant="blue"
                       size="sm"
-                      onClick={() => alert(`Entering ${chapter.chapterTitle}: Next lesson '${chapter.nextLesson}'...`)}
+                      href={`/journey/${chapter.id}`}
+                      icon={<ArrowRight className="w-3.5 h-3.5" />}
+                      iconPosition="right"
                     >
                       ENTER REALM QUEST
                     </RetroButton>
                   ) : chapter.status === "COMPLETED" ? (
-                    <RetroButton variant="outline" size="sm">
+                    <RetroButton
+                      variant="outline"
+                      size="sm"
+                      href={`/journey/${chapter.id}`}
+                    >
                       REVISIT COMPLETED CHAPTER
                     </RetroButton>
                   ) : (

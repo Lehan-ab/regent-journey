@@ -13,6 +13,7 @@ import {
 import { DEFAULT_AVATAR } from "@/data/avatarOptions";
 import { DEFAULT_EXPLORER_CUSTOMIZATION } from "@/data/customizationsData";
 import { COMPANIONS } from "@/data/companionsData";
+import { CHAPTERS_DATA } from "@/data/chaptersData";
 
 const STORAGE_KEY = "regent_journey_player_v2";
 
@@ -50,15 +51,55 @@ const INITIAL_PLAYER_STATE: PlayerState = {
   membershipStatus: "PROSPECT",
 };
 
-export const FIRST_STEP_BADGE: Badge = {
-  id: "badge-first-step",
-  title: "FIRST STEP",
-  description: "Every Regent starts somewhere. Passed through The Gateway into Seethawaka.",
-  imageUrl: "/images/root_seeker_badge.jpg",
-  unlockedAt: "Just now",
-  rarity: "COMMON",
-  xpAwarded: 50,
+export const CHAPTER_BADGES: Record<string, Badge> = {
+  "loc-gateway": {
+    id: "badge-first-step",
+    title: "FIRST STEP",
+    description: "Every Regent starts somewhere. Passed through The Gateway into Seethawaka.",
+    imageUrl: "/images/root_seeker_badge.jpg",
+    unlockedAt: "Just now",
+    rarity: "COMMON",
+    xpAwarded: 50,
+  },
+  "loc-rotary-roots": {
+    id: "badge-root-seeker",
+    title: "ROOT SEEKER",
+    description: "Mastered the history of Rotary in 1905, Four-Way Test, Service Above Self, and 2026-27 leadership.",
+    imageUrl: "/images/root_seeker_badge.jpg",
+    unlockedAt: "Just now",
+    rarity: "RARE",
+    xpAwarded: 150,
+  },
+  "loc-rotaract-harbor": {
+    id: "badge-voyager",
+    title: "VOYAGER",
+    description: "Discovered the 1968 birth of Rotaract, Elevate Rotaract, and the District 3220 network.",
+    imageUrl: "/images/root_seeker_badge.jpg",
+    unlockedAt: "Just now",
+    rarity: "RARE",
+    xpAwarded: 150,
+  },
+  "loc-regent-keep": {
+    id: "badge-regent-pioneer",
+    title: "REGENT PIONEER",
+    description: "Explored RACSR's charter history, Seethawaka roots, culture, and signature initiatives.",
+    imageUrl: "/images/chapter2_odyssey.jpg",
+    unlockedAt: "Just now",
+    rarity: "EPIC",
+    xpAwarded: 200,
+  },
+  "loc-seven-realms": {
+    id: "badge-avenue-master",
+    title: "AVENUE MASTER",
+    description: "Mastered all 7 Avenues of Service and passed the Avenue Project Matching Challenge.",
+    imageUrl: "/images/chapter3_realms.jpg",
+    unlockedAt: "Just now",
+    rarity: "EPIC",
+    xpAwarded: 350,
+  },
 };
+
+export const FIRST_STEP_BADGE: Badge = CHAPTER_BADGES["loc-gateway"];
 
 interface PlayerContextType {
   player: PlayerState;
@@ -77,6 +118,13 @@ interface PlayerContextType {
   setOnboardingStep: (step: OnboardingStep) => void;
   completeOnboarding: () => void;
   resetJourney: () => void;
+  completeLesson: (
+    lessonId: string,
+    chapterId: string,
+    xpReward: number
+  ) => { chapterCompleted: boolean; badgeUnlocked?: Badge };
+  isLessonCompleted: (lessonId: string) => boolean;
+  isChapterUnlocked: (chapterId: string) => boolean;
 }
 
 const PlayerContext = createContext<PlayerContextType | null>(null);
@@ -296,6 +344,122 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     setPlayer(INITIAL_PLAYER_STATE);
   };
 
+  const completeLesson = (
+    lessonId: string,
+    chapterId: string,
+    xpReward: number
+  ): { chapterCompleted: boolean; badgeUnlocked?: Badge } => {
+    let isNewlyCompletedChapter = false;
+    let newBadge: Badge | undefined = undefined;
+
+    setPlayer((prev) => {
+      const isAlreadyCompleted = prev.completedLessons?.includes(lessonId);
+      const updatedLessons = isAlreadyCompleted
+        ? prev.completedLessons
+        : [...(prev.completedLessons || []), lessonId];
+
+      const additionalXp = isAlreadyCompleted ? 0 : xpReward;
+      const newXp = prev.xp + additionalXp;
+      const { level, rank, xpToNextLevel } = calculateLevelAndRank(newXp);
+
+      const chapter = CHAPTERS_DATA[chapterId];
+      let updatedWorlds = prev.completedWorlds || [];
+      let updatedBadges = prev.badges || [];
+      let nextWorld = prev.currentWorld;
+      let nextChapterLabel = prev.currentChapterLabel;
+
+      if (chapter) {
+        const allLessonsFinished = chapter.lessons.every((l) =>
+          updatedLessons.includes(l.id)
+        );
+        const alreadyInCompletedWorlds = updatedWorlds.includes(chapterId);
+
+        if (allLessonsFinished && !alreadyInCompletedWorlds) {
+          isNewlyCompletedChapter = true;
+          updatedWorlds = Array.from(new Set([...updatedWorlds, chapterId]));
+
+          const badgeReward = CHAPTER_BADGES[chapterId];
+          if (badgeReward && !updatedBadges.some((b) => b.id === badgeReward.id)) {
+            newBadge = badgeReward;
+            updatedBadges = [...updatedBadges, badgeReward];
+          }
+
+          const chapterSequence = [
+            "loc-gateway",
+            "loc-rotary-roots",
+            "loc-rotaract-harbor",
+            "loc-regent-keep",
+            "loc-seven-realms",
+            "loc-project-forge",
+            "loc-codewood",
+            "loc-grand-archive",
+            "loc-impact-frontier",
+            "loc-membership-citadel",
+          ];
+          const currIdx = chapterSequence.indexOf(chapterId);
+          if (currIdx >= 0 && currIdx < chapterSequence.length - 1) {
+            const nextChapId = chapterSequence[currIdx + 1];
+            const nextChapter = CHAPTERS_DATA[nextChapId];
+            if (nextChapter) {
+              nextWorld = nextChapter.worldName;
+              nextChapterLabel = nextChapter.chapterLabel;
+            }
+          }
+        }
+      }
+
+      const calculatedProgress = Math.min(
+        100,
+        Math.round((updatedLessons.length / 19) * 100)
+      );
+
+      return {
+        ...prev,
+        xp: newXp,
+        level,
+        rank,
+        xpToNextLevel,
+        completedLessons: updatedLessons,
+        completedWorlds: updatedWorlds,
+        badges: updatedBadges,
+        currentWorld: nextWorld,
+        currentChapterLabel: nextChapterLabel,
+        journeyProgress: Math.max(prev.journeyProgress, calculatedProgress),
+      };
+    });
+
+    return {
+      chapterCompleted: isNewlyCompletedChapter,
+      badgeUnlocked: newBadge,
+    };
+  };
+
+  const isLessonCompleted = (lessonId: string): boolean => {
+    return player.completedLessons?.includes(lessonId) || false;
+  };
+
+  const isChapterUnlocked = (chapterId: string): boolean => {
+    if (chapterId === "loc-gateway" || chapterId === "loc-rotary-roots") {
+      return true;
+    }
+    const chapterSequence = [
+      "loc-gateway",
+      "loc-rotary-roots",
+      "loc-rotaract-harbor",
+      "loc-regent-keep",
+      "loc-seven-realms",
+      "loc-project-forge",
+      "loc-codewood",
+      "loc-grand-archive",
+      "loc-impact-frontier",
+      "loc-membership-citadel",
+    ];
+    const idx = chapterSequence.indexOf(chapterId);
+    if (idx <= 0) return true;
+    const prevChapterId = chapterSequence[idx - 1];
+    return player.completedWorlds?.includes(prevChapterId) || false;
+  };
+
   return (
     <PlayerContext.Provider
       value={{
@@ -315,6 +479,9 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         setOnboardingStep,
         completeOnboarding,
         resetJourney,
+        completeLesson,
+        isLessonCompleted,
+        isChapterUnlocked,
       }}
     >
       {children}

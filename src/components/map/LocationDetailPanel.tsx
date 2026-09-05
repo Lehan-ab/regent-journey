@@ -229,7 +229,7 @@ export default function LocationDetailPanel({
             <RetroButton
               variant="blue"
               size="sm"
-              href={location.routeHref}
+              href={`/journey/${location.id}`}
               icon={<ArrowRight className="w-3.5 h-3.5" />}
               iconPosition="right"
             >
@@ -239,7 +239,7 @@ export default function LocationDetailPanel({
             <RetroButton
               variant="outline"
               size="sm"
-              href={location.routeHref}
+              href={`/journey/${location.id}`}
             >
               REVISIT REALM
             </RetroButton>

@@ -25,13 +25,39 @@ import {
 import { usePlayer } from "@/context/PlayerContext";
 
 export default function RegentRealmMap() {
-  const { player } = usePlayer();
-  const [selectedLocation, setSelectedLocation] = useState<RealmLocation | null>(
-    realmLocations.find((loc) => loc.status === "CURRENT") || realmLocations[1]
-  );
+  const { player, isChapterUnlocked } = usePlayer();
+
+  const dynamicLocations: RealmLocation[] = React.useMemo(() => {
+    return realmLocations.map((loc) => {
+      const isCompleted =
+        player.completedWorlds?.includes(loc.id) ||
+        (loc.id === "loc-gateway" && player.onboardingComplete);
+      const isUnlocked = isChapterUnlocked(loc.id);
+      const isCurrent = isUnlocked && !isCompleted;
+      const status: "COMPLETED" | "CURRENT" | "LOCKED" = isCompleted
+        ? "COMPLETED"
+        : isCurrent
+        ? "CURRENT"
+        : "LOCKED";
+
+      return {
+        ...loc,
+        status,
+        routeHref: `/journey/${loc.id}`,
+      };
+    });
+  }, [player.completedWorlds, player.onboardingComplete, isChapterUnlocked]);
+
+  const [selectedLocation, setSelectedLocation] = useState<RealmLocation | null>(null);
   const [selectedSecret, setSelectedSecret] = useState<MapSecret | null>(null);
   const [discoveredSecrets, setDiscoveredSecrets] = useState<string[]>([]);
   const [hoveredLocation, setHoveredLocation] = useState<RealmLocation | null>(null);
+
+  // Initialize selected location to current active chapter
+  React.useEffect(() => {
+    const currentLoc = dynamicLocations.find((loc) => loc.status === "CURRENT") || dynamicLocations[1];
+    setSelectedLocation((prev) => prev || currentLoc);
+  }, [dynamicLocations]);
 
   const handleSelectSecret = (secret: MapSecret) => {
     setSelectedSecret(secret);
@@ -299,7 +325,7 @@ export default function RegentRealmMap() {
               6. CANONICAL 10 WORLD CHAPTER NODES (Prologue + Chapters 1-9)
               ============================================================
             */}
-            {realmLocations.map((loc) => {
+            {dynamicLocations.map((loc) => {
               const isSelected = selectedLocation?.id === loc.id;
               const isCurrent = loc.status === "CURRENT";
               const isCompleted = loc.status === "COMPLETED";

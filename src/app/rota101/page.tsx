@@ -55,7 +55,7 @@ export default function Rota101Page() {
     {
       title: "International Service",
       realm: "FAR HARBOR",
-      desc: "Connects Seethawaka Regent with international Rotaract clubs worldwide for cross-border twin projects, cultural exchanges, and global peace.",
+      desc: "Connects Seethawaka Regent with international Rotaract clubs worldwide for formal Twin Club Agreements (LOI), cross-border joint service projects, cultural exchanges, and global peace.",
       icon: Globe,
       color: "text-cyan-400",
       bgColor: "bg-cyan-950/40",
@@ -186,9 +186,12 @@ export default function Rota101Page() {
       </RetroCard>
 
       {/* Bottom Action */}
-      <div className="text-center pb-4">
-        <RetroButton variant="blue" size="md" href="/home">
-          RETURN TO REALM MAP
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pb-4">
+        <RetroButton variant="yellow" size="md" href="/journey/loc-rotary-roots">
+          START ROTARY ROOTS QUEST
+        </RetroButton>
+        <RetroButton variant="blue" size="md" href="/journey/loc-seven-realms">
+          EXPLORE 7 AVENUES QUEST
         </RetroButton>
       </div>
     </div>
