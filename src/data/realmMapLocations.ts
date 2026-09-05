@@ -220,7 +220,7 @@ export const realmLocations: RealmLocation[] = [
     expandedLore: "Visual inspiration: The legendary 16th-century fortress ruins of the Seethawaka Kingdom, honoring the local cultural heritage that inspires RACSR's courage and dedication.",
     visualTag: "Rajasinghe Fortress Ruins & Castle",
     status: "LOCKED",
-    lessonsTotal: 3,
+    lessonsTotal: 4,
     lessonsCompleted: 0,
     xpReward: 200,
     badgeReward: "REGENT PIONEER",

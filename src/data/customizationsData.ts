@@ -146,11 +146,11 @@ export const COSMETIC_ITEMS: CosmeticItem[] = [
     id: "regent_mantle",
     name: "THE REGENT MANTLE",
     category: "cloak",
-    description: "The most prestigious ceremonial mantle of Rotary Club of Seethawaka Regents, trimmed with gold brocade.",
+    description: "The most prestigious ceremonial mantle of the Rotaract Club of Seethawaka Regent, trimmed with gold brocade.",
     rarity: "LEGENDARY",
     unlockRequirement: {
       type: "membership",
-      description: "Prestigious cosmetic awarded upon official membership approval into RAC Seethawaka.",
+      description: "Prestigious cosmetic awarded upon official membership approval into RAC Seethawaka Regent.",
     },
     icon: "Crown",
     colorHex: "#FFC719",

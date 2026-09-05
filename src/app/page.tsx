@@ -123,10 +123,10 @@ export default function StartPage() {
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="inline-flex items-center gap-2 px-3 py-1 bg-regent-maroon text-white border border-red-950 font-pixel text-xs sm:text-sm uppercase tracking-widest mb-3 shadow-md"
+            className="inline-flex items-center gap-2 px-3.5 py-1 bg-gradient-to-r from-regent-maroon via-red-900 to-regent-maroon text-white border border-regent-gold/60 font-pixel text-xs sm:text-sm uppercase tracking-widest mb-3 shadow-md"
           >
             <Shield className="w-3.5 h-3.5 text-regent-gold" />
-            ROTARACT CLUB OF SEETHAWAKA REGENT
+            ROTARACT CLUB OF SEETHAWAKA REGENT • SELF-SPONSORED CLUB
           </motion.div>
 
           {/* Main Brand Title */}

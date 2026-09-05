@@ -104,6 +104,11 @@ export default function PixelCompanion({
             !
           </span>
         )}
+        {emotion === "proud" && (
+          <span className="absolute -top-1.5 -right-1.5 px-1.5 py-0.2 bg-amber-600 text-white font-pixel text-[9px] font-bold border border-amber-950 shadow-sm">
+            ⚜
+          </span>
+        )}
       </div>
     );
   }

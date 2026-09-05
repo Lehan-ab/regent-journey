@@ -33,6 +33,9 @@ export const metadata: Metadata = {
     "Prospect Digital Guide for the Rotaract Club of Seethawaka Regent. Level up your journey in leadership, fellowship, and community service.",
 };
 
+import AudioControlWidget from "@/components/audio/AudioControlWidget";
+import FloatingClashGuide from "@/components/companion/FloatingClashGuide";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -46,6 +49,8 @@ export default function RootLayout({
           <main className="flex-1 pb-28 md:pb-16">{children}</main>
           <Footer />
           <BottomNav />
+          <AudioControlWidget />
+          <FloatingClashGuide />
         </PlayerProvider>
       </body>
     </html>

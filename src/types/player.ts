@@ -60,7 +60,8 @@ export type CompanionEmotion =
   | "happy"
   | "thinking"
   | "surprised"
-  | "celebrate";
+  | "celebrate"
+  | "proud";
 
 export interface CompanionRelationship {
   id: CompanionId;

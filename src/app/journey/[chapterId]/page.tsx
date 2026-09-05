@@ -18,13 +18,18 @@ import {
   Trophy,
   ArrowRight,
   RotateCcw,
+  MessageSquare,
+  Scroll,
 } from "lucide-react";
 import RetroCard from "@/components/ui/RetroCard";
 import RetroButton from "@/components/ui/RetroButton";
 import PixelCompanion from "@/components/companion/PixelCompanion";
+import StorybookDialogueView from "@/components/story/StorybookDialogueView";
+import CompanionGuidanceModal from "@/components/story/CompanionGuidanceModal";
 import { usePlayer } from "@/context/PlayerContext";
 import { CHAPTERS_DATA, LessonData, ChapterDetails } from "@/data/chaptersData";
 import { realmLocations } from "@/data/realmMapLocations";
+import { audioManager } from "@/lib/audioManager";
 
 export default function ChapterQuestReaderPage() {
   const params = useParams();
@@ -41,8 +46,25 @@ export default function ChapterQuestReaderPage() {
   const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
   const [isAnswerChecked, setIsAnswerChecked] = useState<boolean>(false);
   const [isCorrect, setIsCorrect] = useState<boolean>(false);
-  const [showChapterSuccessModal, setShowChapterSuccessModal] = useState<boolean>(false);
-  const [unlockedBadgeTitle, setUnlockedBadgeTitle] = useState<string>("");
+  const [viewMode, setViewMode] = useState<"story" | "codex">("story");
+
+  // Automatic Companion Guidance Modal State
+  const [guidanceConfig, setGuidanceConfig] = useState<{
+    isOpen: boolean;
+    type: "lesson" | "chapter";
+    currentTitle: string;
+    nextTitle: string;
+    xpAwarded: number;
+    badgeUnlockedTitle?: string;
+    nextChapterId?: string;
+    nextLessonId?: string;
+  }>({
+    isOpen: false,
+    type: "lesson",
+    currentTitle: "",
+    nextTitle: "",
+    xpAwarded: 0,
+  });
 
   // Determine initial lesson
   useEffect(() => {
@@ -112,7 +134,7 @@ export default function ChapterQuestReaderPage() {
   const currentLessonIndex = chapter.lessons.findIndex((l) => l.id === activeLesson?.id);
   const activeIsCompleted = isLessonCompleted(activeLesson?.id || "");
 
-  // Check quiz option
+  // Check quiz option & trigger automatic guidance
   const handleCheckAnswer = () => {
     if (!selectedOptionId || !activeLesson) return;
 
@@ -121,6 +143,7 @@ export default function ChapterQuestReaderPage() {
     setIsCorrect(correct);
 
     if (correct) {
+      audioManager.playSuccessChime();
       // Trigger retro confetti
       try {
         confetti({
@@ -135,14 +158,50 @@ export default function ChapterQuestReaderPage() {
 
       // Complete lesson in PlayerContext
       const res = completeLesson(activeLesson.id, chapter.id, activeLesson.xpReward);
-      if (res.chapterCompleted) {
-        setUnlockedBadgeTitle(res.badgeUnlocked?.title || chapter.badgeReward);
-        setShowChapterSuccessModal(true);
+      const isLastLesson = currentLessonIndex >= chapter.lessons.length - 1;
+
+      // Trigger automatic guidance modal
+      if (res.chapterCompleted || isLastLesson) {
+        const currentIdxInRealms = realmLocations.findIndex((r) => r.id === chapter.id);
+        const nextLoc = realmLocations[currentIdxInRealms + 1] || realmLocations[0];
+        setGuidanceConfig({
+          isOpen: true,
+          type: "chapter",
+          currentTitle: chapter.worldName,
+          nextTitle: nextLoc.worldName,
+          xpAwarded: activeLesson.xpReward + chapter.xpReward,
+          badgeUnlockedTitle: res.badgeUnlocked?.title || chapter.badgeReward,
+          nextChapterId: nextLoc.id,
+        });
+      } else {
+        const nextLesson = chapter.lessons[currentLessonIndex + 1];
+        setGuidanceConfig({
+          isOpen: true,
+          type: "lesson",
+          currentTitle: activeLesson.title,
+          nextTitle: nextLesson.title,
+          xpAwarded: activeLesson.xpReward,
+          nextLessonId: nextLesson.id,
+        });
       }
+    } else {
+      audioManager.playErrorBuzz();
     }
   };
 
-  const handleNextLesson = () => {
+  const handleAdvanceGuidance = () => {
+    setGuidanceConfig((prev) => ({ ...prev, isOpen: false }));
+    if (guidanceConfig.type === "chapter" && guidanceConfig.nextChapterId) {
+      router.push(`/journey/${guidanceConfig.nextChapterId}`);
+    } else if (guidanceConfig.nextLessonId) {
+      setActiveLessonId(guidanceConfig.nextLessonId);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } else {
+      router.push("/journey");
+    }
+  };
+
+  const handleNextLessonManual = () => {
     if (currentLessonIndex < chapter.lessons.length - 1) {
       const nextLesson = chapter.lessons[currentLessonIndex + 1];
       setActiveLessonId(nextLesson.id);
@@ -161,7 +220,7 @@ export default function ChapterQuestReaderPage() {
   return (
     <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 pt-4 pb-16">
       {/* 1. Top Breadcrumb & Chapter Status Bar */}
-      <div className="flex items-center justify-between pb-3 border-b border-border-card mb-5">
+      <div className="flex items-center justify-between pb-3 border-b border-[#3D2612] mb-5">
         <Link
           href="/journey"
           className="flex items-center gap-2 font-pixel text-xs text-regent-blue hover:underline"
@@ -172,37 +231,37 @@ export default function ChapterQuestReaderPage() {
           <span className="font-pixel text-xs text-regent-gold uppercase">
             {chapter.chapterLabel}: {chapter.worldName}
           </span>
-          <span className="text-[10px] font-pixel text-text-muted">
+          <span className="text-[10px] font-pixel text-[#A48871]">
             • LESSON {currentLessonIndex + 1} OF {chapter.lessons.length}
           </span>
         </div>
       </div>
 
       {/* 2. Chapter Illustrated Header Banner */}
-      <RetroCard className="overflow-hidden mb-6 border-2 border-regent-blue bg-[#071331]">
+      <div className="relative rounded-none border-4 border-[#3D2612] bg-[#0A0503] overflow-hidden mb-6 shadow-2xl">
         <div className="relative w-full h-36 sm:h-44 md:h-52 overflow-hidden">
           <Image
             src={realmLocation?.image || "/images/rotary_roots.jpg"}
             alt={chapter.worldName}
             fill
             priority
-            className="object-cover object-center"
+            className="object-cover object-center filter brightness-90"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#071331] via-[#071331]/60 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0A0503] via-[#0A0503]/50 to-transparent" />
 
           {/* Top Badges */}
           <div className="absolute top-3 left-3 right-3 flex items-center justify-between gap-2 z-10 flex-wrap">
             <div className="flex items-center gap-2">
-              <span className="px-2.5 py-0.5 bg-regent-maroon text-white font-pixel text-[10px] sm:text-xs font-bold uppercase border border-red-950">
+              <span className="px-2.5 py-0.5 bg-regent-maroon text-white font-pixel text-[10px] sm:text-xs font-bold uppercase border border-red-950 shadow-md">
                 {chapter.chapterLabel}
               </span>
-              <span className="px-2 py-0.5 bg-[#02091F]/90 text-regent-blue font-pixel text-[10px] sm:text-xs border border-border-card">
+              <span className="px-2 py-0.5 bg-[#0A0503]/90 text-regent-blue font-pixel text-[10px] sm:text-xs border border-[#3D2612]">
                 {chapter.worldName}
               </span>
             </div>
 
-            <div className="px-2 py-0.5 bg-[#02091F]/90 text-regent-gold font-pixel text-[10px] sm:text-xs border border-yellow-900/60 flex items-center gap-1 font-bold">
-              <Sparkles className="w-3 h-3" /> BADGE: {chapter.badgeReward}
+            <div className="px-2 py-0.5 bg-[#0A0503]/90 text-regent-gold font-pixel text-[10px] sm:text-xs border border-yellow-800 flex items-center gap-1 font-bold">
+              <Sparkles className="w-3 h-3 text-regent-gold" /> BADGE: {chapter.badgeReward}
             </div>
           </div>
 
@@ -220,8 +279,8 @@ export default function ChapterQuestReaderPage() {
 
         {/* NPC Welcome Quote */}
         {activeLesson?.storyIntro && (
-          <div className="p-3 bg-[#03091B] border-t border-border-card flex items-start gap-3">
-            <div className="w-8 h-8 rounded-none bg-regent-maroon border border-regent-gold flex items-center justify-center font-pixel text-xs font-bold text-regent-gold shrink-0 mt-0.5">
+          <div className="p-3 bg-[#120703] border-t-2 border-[#3D2612] flex items-start gap-3">
+            <div className="w-8 h-8 bg-regent-maroon border border-regent-gold flex items-center justify-center font-pixel text-xs font-bold text-regent-gold shrink-0 mt-0.5 shadow-sm">
               {activeLesson.storyIntro.speaker.charAt(0)}
             </div>
             <div className="min-w-0">
@@ -229,20 +288,20 @@ export default function ChapterQuestReaderPage() {
                 <span className="font-pixel text-xs text-regent-gold font-bold">
                   {activeLesson.storyIntro.speaker.toUpperCase()}
                 </span>
-                <span className="text-[10px] text-text-muted">
+                <span className="text-[10px] text-[#A48871]">
                   ({activeLesson.storyIntro.speakerRole})
                 </span>
               </div>
-              <p className="text-xs text-text-secondary italic mt-0.5 leading-relaxed">
+              <p className="text-xs text-[#E5D7C7] font-serif italic mt-0.5 leading-relaxed">
                 &ldquo;{activeLesson.storyIntro.dialogue}&rdquo;
               </p>
             </div>
           </div>
         )}
-      </RetroCard>
+      </div>
 
       {/* 3. Interactive Lesson Stepper / Tabs */}
-      <div className="mb-6 p-2 bg-[#02091F] border-2 border-border-card overflow-x-auto">
+      <div className="mb-6 p-2 bg-[#0A0503] border-2 border-[#3D2612] overflow-x-auto shadow-md">
         <div className="flex items-center gap-2 min-w-max">
           {chapter.lessons.map((lesson, idx) => {
             const completed = isLessonCompleted(lesson.id);
@@ -254,10 +313,10 @@ export default function ChapterQuestReaderPage() {
                 onClick={() => setActiveLessonId(lesson.id)}
                 className={`px-3 py-2 border flex items-center gap-2 text-xs transition-all ${
                   isActive
-                    ? "bg-[#091f42] border-regent-blue text-white shadow-[0_0_10px_rgba(32,169,246,0.3)]"
+                    ? "bg-[#2D1609] border-regent-gold text-regent-gold shadow-md font-bold"
                     : completed
-                    ? "bg-[#04152e] border-regent-green/50 text-text-secondary hover:text-white"
-                    : "bg-[#050e24] border-border-card text-text-muted hover:text-text-secondary"
+                    ? "bg-[#170E06] border-green-800/60 text-green-300 hover:text-white"
+                    : "bg-[#120703] border-[#3D2612] text-[#A48871] hover:text-white"
                 }`}
               >
                 {completed ? (
@@ -271,7 +330,7 @@ export default function ChapterQuestReaderPage() {
                   {lesson.title}
                 </span>
                 {isActive && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-regent-blue animate-ping shrink-0" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-regent-gold animate-ping shrink-0" />
                 )}
               </button>
             );
@@ -279,230 +338,282 @@ export default function ChapterQuestReaderPage() {
         </div>
       </div>
 
-      {/* 4. Main Lesson Reader Content */}
-      <div className="space-y-6">
-        {/* Lesson Heading Card */}
-        <div className="p-4 sm:p-6 bg-[#071331] border-2 border-border-card">
-          <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
-            <span className="px-2 py-0.5 bg-regent-blue/20 text-regent-blue font-pixel text-[10px] border border-regent-blue/50">
-              LESSON {currentLessonIndex + 1} OF {chapter.lessons.length}
-            </span>
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-pixel text-text-muted flex items-center gap-1">
-                <BookOpen className="w-3 h-3 text-text-muted" /> {activeLesson.readTime}
-              </span>
-              <span className="px-2 py-0.5 bg-[#02091F] text-regent-gold font-pixel text-[10px] border border-yellow-900/60 font-bold flex items-center gap-1">
-                <Sparkles className="w-3 h-3" /> +{activeLesson.xpReward} XP
-              </span>
-              {activeIsCompleted && (
-                <span className="px-2 py-0.5 bg-green-950 text-regent-green font-pixel text-[10px] border border-regent-green/60 font-bold flex items-center gap-1">
-                  <CheckCircle2 className="w-3 h-3" /> COMPLETED
-                </span>
-              )}
-            </div>
-          </div>
-
-          <h2 className="font-pixel text-xl sm:text-2xl font-bold text-white tracking-wide">
-            {activeLesson.title}
-          </h2>
-          <p className="text-xs sm:text-sm text-text-secondary mt-1">
-            {activeLesson.subtitle}
-          </p>
+      {/* 4. Storybook View Mode Switcher */}
+      <div className="flex items-center justify-between gap-3 mb-5 flex-wrap">
+        <div className="flex items-center gap-1.5 p-1 bg-[#0A0503] border border-[#3D2612]">
+          <button
+            onClick={() => setViewMode("story")}
+            className={`px-3 py-1.5 font-pixel text-xs flex items-center gap-1.5 transition-all ${
+              viewMode === "story"
+                ? "bg-[#2D1609] border border-regent-gold text-regent-gold font-bold shadow-md"
+                : "text-[#A48871] hover:text-white"
+            }`}
+          >
+            <MessageSquare className="w-3.5 h-3.5" /> INTERACTIVE STORY DIALOGUE
+          </button>
+          <button
+            onClick={() => setViewMode("codex")}
+            className={`px-3 py-1.5 font-pixel text-xs flex items-center gap-1.5 transition-all ${
+              viewMode === "codex"
+                ? "bg-[#2D1609] border border-regent-gold text-regent-gold font-bold shadow-md"
+                : "text-[#A48871] hover:text-white"
+            }`}
+          >
+            <BookOpen className="w-3.5 h-3.5" /> ILLUMINATED CODEX SCROLL
+          </button>
         </div>
 
-        {/* Lesson Sections */}
-        {activeLesson.sections.map((section, sIdx) => (
-          <RetroCard key={sIdx} className="p-5 sm:p-6 bg-[#071331]">
-            <h3 className="font-pixel text-base sm:text-lg font-bold text-white mb-3 flex items-center gap-2">
-              <span className="text-regent-gold">§</span> {section.title}
-            </h3>
+        <div className="flex items-center gap-2 text-[11px] font-pixel text-[#A48871]">
+          <Sparkles className="w-3.5 h-3.5 text-regent-gold" />
+          <span>+{activeLesson.xpReward} XP BOUNTY</span>
+        </div>
+      </div>
 
-            {/* Paragraphs */}
-            <div className="space-y-3 font-body text-xs sm:text-sm text-text-secondary leading-relaxed">
-              {section.content.map((paragraph, pIdx) => (
-                <p key={pIdx}>{paragraph}</p>
-              ))}
+      {/* 5. Main Lesson Reader Experience */}
+      {viewMode === "story" ? (
+        /* INTERACTIVE STORYBOOK MODE: Guide and Prospect Conversational Scene */
+        <div className="mb-8">
+          <StorybookDialogueView
+            lesson={activeLesson}
+            chapterTitle={chapter.chapterTitle}
+            chapterLabel={chapter.chapterLabel}
+            worldName={chapter.worldName}
+            chapterNumber={chapter.chapterNumber}
+            bgImage={realmLocation?.image}
+            onProceedToKnowledgeCheck={() => {
+              const el = document.getElementById("knowledge-check-section");
+              if (el) el.scrollIntoView({ behavior: "smooth" });
+            }}
+          />
+        </div>
+      ) : (
+        /* ILLUMINATED CODEX MODE: Full reference text */
+        <div className="space-y-6 mb-8">
+          <div className="p-4 sm:p-6 bg-[#0C0603] border-4 border-[#3D2612] shadow-xl">
+            <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
+              <span className="px-2 py-0.5 bg-regent-maroon text-white font-pixel text-[10px] border border-red-950">
+                LESSON {currentLessonIndex + 1} OF {chapter.lessons.length}
+              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-pixel text-[#A48871] flex items-center gap-1">
+                  <BookOpen className="w-3 h-3 text-[#A48871]" /> {activeLesson.readTime}
+                </span>
+                <span className="px-2 py-0.5 bg-[#170B05] text-regent-gold font-pixel text-[10px] border border-yellow-800 font-bold flex items-center gap-1">
+                  <Sparkles className="w-3 h-3" /> +{activeLesson.xpReward} XP
+                </span>
+                {activeIsCompleted && (
+                  <span className="px-2 py-0.5 bg-green-950 text-regent-green font-pixel text-[10px] border border-regent-green/60 font-bold flex items-center gap-1">
+                    <CheckCircle2 className="w-3 h-3" /> COMPLETED
+                  </span>
+                )}
+              </div>
             </div>
 
-            {/* Bullet Points */}
-            {section.bulletPoints && (
-              <div className="mt-4 p-3.5 bg-[#02091F] border border-border-card space-y-2">
-                {section.bulletPoints.map((point, bIdx) => (
-                  <div key={bIdx} className="flex items-start gap-2.5 text-xs text-white">
-                    <span className="font-pixel text-regent-gold text-xs shrink-0 mt-0.5">✦</span>
-                    <span className="leading-relaxed">{point}</span>
-                  </div>
+            <h2 className="font-pixel text-xl sm:text-2xl font-bold text-white tracking-wide">
+              {activeLesson.title}
+            </h2>
+            <p className="font-serif italic text-xs sm:text-sm text-[#C9B9A6] mt-1">
+              {activeLesson.subtitle}
+            </p>
+          </div>
+
+          {activeLesson.sections.map((section, sIdx) => (
+            <div
+              key={sIdx}
+              className="p-5 sm:p-6 bg-[#0C0603] border-2 border-[#3D2612] shadow-md"
+            >
+              <h3 className="font-pixel text-base sm:text-lg font-bold text-regent-gold mb-3 flex items-center gap-2">
+                <span className="text-regent-gold font-serif">§</span> {section.title}
+              </h3>
+
+              <div className="space-y-3 font-serif text-sm sm:text-base text-[#F4EDE5] leading-relaxed">
+                {section.content.map((paragraph, pIdx) => (
+                  <p key={pIdx}>{paragraph}</p>
                 ))}
               </div>
-            )}
 
-            {/* Quote Box */}
-            {section.quote && (
-              <div className="mt-4 p-3.5 bg-gradient-to-r from-red-950/40 via-[#071331] to-red-950/40 border-l-4 border-regent-maroon">
-                <p className="text-xs sm:text-sm text-white italic whitespace-pre-line leading-relaxed">
-                  &ldquo;{section.quote.text}&rdquo;
-                </p>
-                <p className="text-[10px] font-pixel text-regent-gold mt-1.5 uppercase">
-                  — {section.quote.author}
-                </p>
-              </div>
-            )}
+              {section.bulletPoints && (
+                <div className="mt-4 p-3.5 bg-[#140803] border border-[#3D2612] space-y-2">
+                  {section.bulletPoints.map((point, bIdx) => (
+                    <div key={bIdx} className="flex items-start gap-2.5 text-xs text-white font-serif">
+                      <span className="font-pixel text-regent-gold text-xs shrink-0 mt-0.5">✦</span>
+                      <span className="leading-relaxed">{point}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
 
-            {/* Key Takeaway */}
-            {section.keyTakeaway && (
-              <div className="mt-4 p-3 bg-[#02091F] border border-regent-blue/40 flex items-start gap-2.5 text-xs">
-                <Shield className="w-4 h-4 text-regent-blue shrink-0 mt-0.5" />
-                <span className="text-white font-medium leading-relaxed">
-                  <strong>Key Regent Rule:</strong> {section.keyTakeaway}
+              {section.quote && (
+                <div className="mt-4 p-3.5 bg-gradient-to-r from-red-950/40 via-[#170B05] to-red-950/40 border-l-4 border-regent-maroon">
+                  <p className="text-xs sm:text-sm text-white italic font-serif leading-relaxed">
+                    &ldquo;{section.quote.text}&rdquo;
+                  </p>
+                  <p className="text-[10px] font-pixel text-regent-gold mt-1.5 uppercase">
+                    — {section.quote.author}
+                  </p>
+                </div>
+              )}
+
+              {section.keyTakeaway && (
+                <div className="mt-4 p-3 bg-[#140803] border border-regent-blue/40 flex items-start gap-2.5 text-xs">
+                  <Shield className="w-4 h-4 text-regent-blue shrink-0 mt-0.5" />
+                  <span className="text-white font-serif leading-relaxed">
+                    <strong className="text-regent-gold">Key Regent Rule:</strong> {section.keyTakeaway}
+                  </span>
+                </div>
+              )}
+            </div>
+          ))}
+
+          {/* Companion Advice Box */}
+          <div className="p-4 sm:p-5 bg-gradient-to-r from-[#140803] via-[#1C0F06] to-[#140803] border-2 border-regent-gold/60 flex items-start gap-4 shadow-md">
+            <div className="shrink-0 pt-1">
+              <PixelCompanion
+                companionId={companionKey}
+                emotion="happy"
+                size="md"
+              />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <span className="font-pixel text-xs text-regent-gold font-bold uppercase tracking-wider">
+                  COMPANION INSIGHT • {companionKey.toUpperCase()}
+                </span>
+                <span className="text-[9px] font-pixel text-[#A48871]">
+                  ADVENTURE ALLY
                 </span>
               </div>
-            )}
-          </RetroCard>
-        ))}
-
-        {/* 5. Companion Dialogue / Advice Box */}
-        <div className="p-4 sm:p-5 bg-gradient-to-r from-[#03091B] via-[#071331] to-[#03091B] border-2 border-regent-gold/60 flex items-start gap-4 shadow-retro-card">
-          <div className="shrink-0 pt-1">
-            <PixelCompanion
-              companionId={companionKey}
-              emotion="happy"
-              size="md"
-            />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between gap-2 mb-1">
-              <span className="font-pixel text-xs text-regent-gold font-bold uppercase tracking-wider">
-                COMPANION INSIGHT • {companionKey.toUpperCase()}
-              </span>
-              <span className="text-[9px] font-pixel text-text-muted">
-                ADVENTURE ALLY
-              </span>
+              <p className="font-serif italic text-xs sm:text-sm text-[#F4EDE5] leading-relaxed">
+                &ldquo;{companionInsight}&rdquo;
+              </p>
             </div>
-            <p className="font-body text-xs sm:text-sm text-white italic leading-relaxed">
-              &ldquo;{companionInsight}&rdquo;
+          </div>
+        </div>
+      )}
+
+      {/* 6. The Guardian's Riddle / Interactive Knowledge Check */}
+      <div
+        id="knowledge-check-section"
+        className="rounded-none border-4 border-regent-gold bg-[#0C0603] p-5 sm:p-7 shadow-[0_0_30px_rgba(255,199,25,0.15)] relative mb-8"
+      >
+        <div className="flex items-start gap-3 mb-4">
+          <div className="w-10 h-10 bg-[#170B05] border-2 border-regent-gold flex items-center justify-center shrink-0">
+            <HelpCircle className="w-6 h-6 text-regent-gold" />
+          </div>
+          <div>
+            <span className="text-[10px] font-pixel text-regent-gold uppercase tracking-widest block">
+              TRIAL OF THE STORY GUARDIAN
+            </span>
+            <h3 className="font-pixel text-sm sm:text-base font-bold text-white leading-snug">
+              {activeLesson.knowledgeCheck.question}
+            </h3>
+            <p className="text-[11px] font-serif text-[#C9B9A6] mt-0.5">
+              Select the correct truth to prove your mastery and advance to the next chronicle!
             </p>
           </div>
         </div>
 
-        {/* 6. Interactive Knowledge Check / Quiz */}
-        <RetroCard
-          headerTag="KNOWLEDGE CHECK QUEST"
-          headerColor="yellow"
-          className="p-5 sm:p-6 bg-[#071331] border-2 border-regent-gold"
-        >
-          <div className="flex items-start gap-2.5 mb-4">
-            <HelpCircle className="w-5 h-5 text-regent-gold shrink-0 mt-0.5" />
-            <div>
-              <h3 className="font-pixel text-sm sm:text-base font-bold text-white leading-snug">
-                {activeLesson.knowledgeCheck.question}
-              </h3>
-              <p className="text-[11px] text-text-muted mt-0.5">
-                Select the correct option to prove your understanding and claim your +{activeLesson.xpReward} XP bounty!
-              </p>
-            </div>
-          </div>
+        {/* Options Grid */}
+        <div className="space-y-2.5 mb-4">
+          {activeLesson.knowledgeCheck.options.map((option) => {
+            const isSelected = selectedOptionId === option.id;
+            const isTheCorrectOption = option.id === activeLesson.knowledgeCheck.correctOptionId;
 
-          {/* Options Grid */}
-          <div className="space-y-2.5 mb-4">
-            {activeLesson.knowledgeCheck.options.map((option) => {
-              const isSelected = selectedOptionId === option.id;
-              const isTheCorrectOption = option.id === activeLesson.knowledgeCheck.correctOptionId;
-
-              let buttonStyle = "border-border-card bg-[#02091F] text-white hover:border-regent-blue";
-              if (isAnswerChecked) {
-                if (isTheCorrectOption) {
-                  buttonStyle = "border-regent-green bg-green-950/70 text-white font-bold";
-                } else if (isSelected && !isTheCorrectOption) {
-                  buttonStyle = "border-red-600 bg-red-950/70 text-white line-through";
-                }
-              } else if (isSelected) {
-                buttonStyle = "border-regent-blue bg-[#091f42] text-white font-bold";
+            let buttonStyle = "border-[#3D2612] bg-[#140803] text-white hover:border-regent-gold";
+            if (isAnswerChecked) {
+              if (isTheCorrectOption) {
+                buttonStyle = "border-regent-green bg-green-950/80 text-white font-bold";
+              } else if (isSelected && !isTheCorrectOption) {
+                buttonStyle = "border-red-600 bg-red-950/80 text-white line-through";
               }
+            } else if (isSelected) {
+              buttonStyle = "border-regent-gold bg-[#2D1609] text-white font-bold shadow-md";
+            }
 
-              return (
-                <button
-                  key={option.id}
-                  onClick={() => {
-                    if (!isAnswerChecked || !isCorrect) {
-                      setSelectedOptionId(option.id);
-                      setIsAnswerChecked(false);
-                    }
-                  }}
-                  className={`w-full p-3.5 border text-left text-xs sm:text-sm transition-all flex items-start justify-between gap-3 ${buttonStyle}`}
-                >
-                  <span className="leading-relaxed">{option.text}</span>
-                  {isAnswerChecked && isTheCorrectOption && (
-                    <CheckCircle2 className="w-4 h-4 text-regent-green shrink-0 mt-0.5" />
-                  )}
-                </button>
-              );
-            })}
+            return (
+              <button
+                key={option.id}
+                onClick={() => {
+                  if (!isAnswerChecked || !isCorrect) {
+                    audioManager.playTap();
+                    setSelectedOptionId(option.id);
+                    setIsAnswerChecked(false);
+                  }
+                }}
+                className={`w-full p-3.5 border text-left font-serif text-xs sm:text-sm transition-all flex items-start justify-between gap-3 ${buttonStyle}`}
+              >
+                <span className="leading-relaxed">{option.text}</span>
+                {isAnswerChecked && isTheCorrectOption && (
+                  <CheckCircle2 className="w-4 h-4 text-regent-green shrink-0 mt-0.5" />
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Feedback Display */}
+        {isAnswerChecked && (
+          <div
+            className={`p-3.5 border-2 mb-4 text-xs font-serif ${
+              isCorrect
+                ? "bg-green-950/70 border-regent-green text-green-100"
+                : "bg-red-950/70 border-red-800 text-red-100"
+            }`}
+          >
+            {isCorrect ? (
+              <div>
+                <p className="font-pixel text-xs font-bold text-regent-gold mb-1">
+                  ✦ TRIAL PASSED! +{activeLesson.xpReward} XP BOUNTY CLAIMED!
+                </p>
+                <p>{activeLesson.knowledgeCheck.successMessage}</p>
+              </div>
+            ) : (
+              <div>
+                <p className="font-pixel text-xs font-bold text-red-300 mb-1">
+                  ✕ NOT QUITE! TRY AGAIN
+                </p>
+                <p>Hint from {companionKey.toUpperCase()}: {activeLesson.knowledgeCheck.hint}</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Action Row */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-3 border-t border-[#3D2612]">
+          <div className="text-[10px] font-pixel text-[#A48871] flex items-center gap-1">
+            <Sparkles className="w-3.5 h-3.5 text-regent-gold" />
+            <span>Reward: +{activeLesson.xpReward} XP Bounty</span>
           </div>
 
-          {/* Feedback Display */}
-          {isAnswerChecked && (
-            <div
-              className={`p-3 border mb-4 text-xs ${
-                isCorrect
-                  ? "bg-green-950/60 border-regent-green text-green-200"
-                  : "bg-red-950/60 border-red-800 text-red-200"
-              }`}
-            >
-              {isCorrect ? (
-                <div>
-                  <p className="font-pixel text-xs font-bold text-regent-gold mb-1">
-                    ✦ QUEST COMPLETE! +{activeLesson.xpReward} XP AWARDED!
-                  </p>
-                  <p>{activeLesson.knowledgeCheck.successMessage}</p>
-                </div>
-              ) : (
-                <div>
-                  <p className="font-pixel text-xs font-bold text-red-300 mb-1">
-                    ✕ NOT QUITE! TRY AGAIN
-                  </p>
-                  <p>Hint from {companionKey.toUpperCase()}: {activeLesson.knowledgeCheck.hint}</p>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Action Row */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-3 border-t border-border-card">
-            <div className="text-[10px] font-pixel text-text-muted flex items-center gap-1">
-              <Sparkles className="w-3.5 h-3.5 text-regent-gold" />
-              <span>Reward: +{activeLesson.xpReward} XP</span>
-            </div>
-
-            <div className="flex items-center gap-2">
-              {!isAnswerChecked || !isCorrect ? (
-                <RetroButton
-                  variant="blue"
-                  size="sm"
-                  disabled={!selectedOptionId}
-                  onClick={handleCheckAnswer}
-                >
-                  CHECK ANSWER
-                </RetroButton>
-              ) : (
-                <RetroButton
-                  variant="green"
-                  size="sm"
-                  onClick={handleNextLesson}
-                  icon={<ArrowRight className="w-3.5 h-3.5" />}
-                  iconPosition="right"
-                >
-                  {currentLessonIndex < chapter.lessons.length - 1
-                    ? "NEXT LESSON →"
-                    : "FINISH CHAPTER QUEST →"}
-                </RetroButton>
-              )}
-            </div>
+          <div className="flex items-center gap-2">
+            {!isAnswerChecked || !isCorrect ? (
+              <RetroButton
+                variant="yellow"
+                size="sm"
+                disabled={!selectedOptionId}
+                onClick={handleCheckAnswer}
+              >
+                SUBMIT ANSWER
+              </RetroButton>
+            ) : (
+              <RetroButton
+                variant="green"
+                size="sm"
+                onClick={handleNextLessonManual}
+                icon={<ArrowRight className="w-3.5 h-3.5" />}
+                iconPosition="right"
+              >
+                {currentLessonIndex < chapter.lessons.length - 1
+                  ? "NEXT CHRONICLE →"
+                  : "FINISH REALM QUEST →"}
+              </RetroButton>
+            )}
           </div>
-        </RetroCard>
+        </div>
       </div>
 
       {/* 7. Bottom Navigation Controls */}
-      <div className="mt-8 flex items-center justify-between pt-4 border-t border-border-card">
+      <div className="flex items-center justify-between pt-4 border-t border-[#3D2612]">
         {currentLessonIndex > 0 ? (
           <RetroButton
             variant="outline"
@@ -512,7 +623,7 @@ export default function ChapterQuestReaderPage() {
               window.scrollTo({ top: 0, behavior: "smooth" });
             }}
           >
-            ← PREVIOUS LESSON
+            ← PREVIOUS SCROLL
           </RetroButton>
         ) : (
           <RetroButton variant="outline" size="sm" href="/journey">
@@ -529,7 +640,7 @@ export default function ChapterQuestReaderPage() {
               window.scrollTo({ top: 0, behavior: "smooth" });
             }}
           >
-            NEXT LESSON →
+            NEXT SCROLL →
           </RetroButton>
         ) : (
           <RetroButton variant="yellow" size="sm" href="/journey">
@@ -538,66 +649,18 @@ export default function ChapterQuestReaderPage() {
         )}
       </div>
 
-      {/* 8. Grand Chapter Victory / Realm Cleared Celebration Modal */}
-      {showChapterSuccessModal && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="max-w-md w-full bg-[#071331] border-4 border-regent-gold p-6 text-center shadow-retro-card-lg relative animate-bounce-slight">
-            <div className="w-16 h-16 mx-auto bg-amber-950 border-2 border-regent-gold flex items-center justify-center mb-3">
-              <Trophy className="w-8 h-8 text-regent-gold animate-bounce" />
-            </div>
-
-            <span className="font-pixel text-[10px] text-regent-gold bg-regent-maroon px-2 py-0.5 border border-red-950 font-bold uppercase">
-              REALM QUEST CLEARED!
-            </span>
-
-            <h2 className="font-pixel text-xl sm:text-2xl font-bold text-white mt-2 mb-1">
-              {chapter.chapterTitle.toUpperCase()} COMPLETED!
-            </h2>
-
-            <p className="text-xs sm:text-sm text-text-secondary mb-4 leading-relaxed">
-              You have completed all {chapter.lessons.length} lessons in this chapter! Your dedication to Rotary and Regent knowledge elevates your standing.
-            </p>
-
-            <div className="p-3 bg-[#02091F] border border-border-card mb-5 text-left flex items-center gap-3">
-              <div className="w-12 h-12 bg-regent-maroon border border-regent-gold flex items-center justify-center font-pixel text-base font-bold text-regent-gold shrink-0">
-                ✦
-              </div>
-              <div className="min-w-0">
-                <span className="text-[10px] font-pixel text-regent-gold uppercase block">
-                  BADGE UNLOCKED
-                </span>
-                <span className="font-pixel text-sm font-bold text-white block truncate">
-                  {unlockedBadgeTitle}
-                </span>
-                <span className="text-[10px] text-text-muted block">
-                  Added to your Profile Badge Vault (+{chapter.xpReward} XP total)
-                </span>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <RetroButton
-                variant="yellow"
-                size="md"
-                className="w-full justify-center"
-                onClick={() => {
-                  setShowChapterSuccessModal(false);
-                  router.push("/journey");
-                }}
-              >
-                RETURN TO REALM MAP
-              </RetroButton>
-
-              <button
-                onClick={() => setShowChapterSuccessModal(false)}
-                className="text-xs text-text-muted hover:text-white font-pixel pt-1 block mx-auto"
-              >
-                STAY IN CHAPTER TO REVIEW LESSONS
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* 8. AUTOMATIC COMPANION GUIDANCE MODAL */}
+      <CompanionGuidanceModal
+        isOpen={guidanceConfig.isOpen}
+        type={guidanceConfig.type}
+        currentTitle={guidanceConfig.currentTitle}
+        nextTitle={guidanceConfig.nextTitle}
+        xpAwarded={guidanceConfig.xpAwarded}
+        badgeUnlockedTitle={guidanceConfig.badgeUnlockedTitle}
+        nextChapterId={guidanceConfig.nextChapterId}
+        onAdvance={handleAdvanceGuidance}
+        onClose={() => setGuidanceConfig((prev) => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 }
