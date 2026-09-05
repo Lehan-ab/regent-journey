@@ -29,6 +29,12 @@ export default function OnboardingPage() {
     resetJourney,
   } = usePlayer();
 
+  // Helper to transition steps and update URL query param synchronously
+  const goToStep = (step: OnboardingStep) => {
+    setOnboardingStep(step);
+    router.push(`/onboarding?step=${step}`);
+  };
+
   // Synchronize step with query param if present
   useEffect(() => {
     if (!isHydrated) return;
@@ -38,8 +44,11 @@ export default function OnboardingPage() {
       if (player.onboardingStep !== stepParam) {
         setOnboardingStep(stepParam);
       }
+    } else if (!stepParam && player.onboardingStep && player.onboardingStep !== "completed") {
+      router.replace(`/onboarding?step=${player.onboardingStep}`);
     }
-  }, [searchParams, isHydrated, player.onboardingStep, setOnboardingStep]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, isHydrated]);
 
   // If already completed and user visits /onboarding without explicitly testing, redirect to /home
   useEffect(() => {
@@ -68,7 +77,7 @@ export default function OnboardingPage() {
     if (player.xp < 25) {
       addXp(25, "Explorer Profile Created");
     }
-    setOnboardingStep("companion");
+    goToStep("companion");
   };
 
   // Handle Step 2 Complete (Companion)
@@ -78,14 +87,14 @@ export default function OnboardingPage() {
     if (player.xp < 50) {
       addXp(25, "Companion Alliance Forged");
     }
-    setOnboardingStep("interests");
+    goToStep("interests");
   };
 
   // Handle Step 3 Complete (Interests)
   const handleInterestsConfirm = (interests: string[], primaryGoal: string) => {
     setInterests(interests);
     setPrimaryGoal(primaryGoal);
-    setOnboardingStep("gateway");
+    goToStep("gateway");
   };
 
   // Handle Step 4 Complete (Gateway -> Enter Realm)
@@ -97,11 +106,11 @@ export default function OnboardingPage() {
   // Back Navigation Handler
   const handleBack = () => {
     if (player.onboardingStep === "companion") {
-      setOnboardingStep("explorer");
+      goToStep("explorer");
     } else if (player.onboardingStep === "interests") {
-      setOnboardingStep("companion");
+      goToStep("companion");
     } else if (player.onboardingStep === "gateway") {
-      setOnboardingStep("interests");
+      goToStep("interests");
     }
   };
 

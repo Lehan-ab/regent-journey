@@ -61,6 +61,7 @@ export default function Step2Companion({
   };
 
   const handleProceed = () => {
+    setShowCelebration(false);
     onConfirm(selectedId);
   };
 

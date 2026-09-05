@@ -78,6 +78,7 @@ export default function Step1Explorer({
 
   // Proceed to Step 2
   const handleProceedToCompanion = () => {
+    setShowCelebration(false);
     const finalName = name.trim() || "Traveller";
     onConfirm(finalName, initialAvatar, selectedId);
   };
