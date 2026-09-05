@@ -30,8 +30,12 @@ import { EXPLORERS } from "@/data/explorersData";
 import { ARCHETYPE_HAIRSTYLES } from "@/data/customizationsData";
 
 export default function ProfilePage() {
-  const { player, resetJourney, addXp } = usePlayer();
+  const { player, resetJourney, addXp, membershipReadiness } = usePlayer();
   const [resetConfirm, setResetConfirm] = useState(false);
+
+  const isDevToolsEnabled =
+    process.env.NODE_ENV === "development" ||
+    process.env.NEXT_PUBLIC_ENABLE_DEV_TOOLS === "true";
 
   const companion = COMPANIONS[player.companion] || COMPANIONS.nova;
   const currentExplorer = EXPLORERS[player.explorerId] || EXPLORERS.pathfinder;
@@ -276,6 +280,68 @@ export default function ProfilePage() {
         </Link>
       </RetroCard>
 
+      {/* Membership Readiness Card */}
+      <RetroCard className="p-4 sm:p-5 mb-6 bg-gradient-to-r from-[#071331] via-[#05142e] to-[#071331] border border-border-card">
+        <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
+          <div className="flex items-center gap-2">
+            <Shield className="w-4 h-4 text-regent-gold" />
+            <h3 className="font-pixel text-xs sm:text-sm font-bold text-white uppercase">
+              MEMBERSHIP PATHWAY READINESS
+            </h3>
+          </div>
+          <span
+            className={`font-pixel text-[9px] px-2 py-0.5 border uppercase ${
+              membershipReadiness.eligibleForBoardReview
+                ? "text-regent-green bg-green-950 border-green-800 font-bold"
+                : "text-text-muted bg-[#02091F] border-border-card"
+            }`}
+          >
+            BOARD REVIEW: {membershipReadiness.eligibleForBoardReview ? "ELIGIBLE" : "LOCKED"}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+          <div className="p-2.5 bg-[#02091F] border border-border-card text-center">
+            <span className="text-[10px] font-pixel text-text-muted uppercase block">KNOWLEDGE</span>
+            <span
+              className={`font-pixel text-xs font-bold ${
+                membershipReadiness.knowledgeComplete ? "text-regent-green" : "text-regent-gold"
+              }`}
+            >
+              {membershipReadiness.knowledgeComplete
+                ? "COMPLETED"
+                : `${membershipReadiness.completedKnowledgeChaptersCount} / ${membershipReadiness.totalKnowledgeChaptersCount}`}
+            </span>
+          </div>
+
+          <div className="p-2.5 bg-[#02091F] border border-border-card text-center">
+            <span className="text-[10px] font-pixel text-text-muted uppercase block">MEETINGS</span>
+            <span
+              className={`font-pixel text-xs font-bold ${
+                membershipReadiness.meetings.current >= membershipReadiness.meetings.required
+                  ? "text-regent-green"
+                  : "text-white"
+              }`}
+            >
+              {membershipReadiness.meetings.current} / {membershipReadiness.meetings.required} VERIFIED
+            </span>
+          </div>
+
+          <div className="p-2.5 bg-[#02091F] border border-border-card text-center col-span-2 sm:col-span-1">
+            <span className="text-[10px] font-pixel text-text-muted uppercase block">PROJECTS</span>
+            <span
+              className={`font-pixel text-xs font-bold ${
+                membershipReadiness.projects.current >= membershipReadiness.projects.required
+                  ? "text-regent-green"
+                  : "text-white"
+              }`}
+            >
+              {membershipReadiness.projects.current} / {membershipReadiness.projects.required} VERIFIED
+            </span>
+          </div>
+        </div>
+      </RetroCard>
+
       {/* Discovered Interests & Primary Goal */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         {/* Interests */}
@@ -326,37 +392,40 @@ export default function ProfilePage() {
         </RetroCard>
       </div>
 
-      {/* Developer Options Card (Reset / Re-run Onboarding) */}
-      <div className="p-4 bg-[#050F2D] border border-border-card/60 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-        <div>
-          <span className="font-pixel text-[11px] text-text-muted font-bold uppercase">
-            EXPLORER MANAGEMENT (DEV TOOLS)
-          </span>
-          <p className="text-[10px] text-text-muted">
-            Switch your preset archetype or reset prospect onboarding progress to test the experience.
-          </p>
-        </div>
+      {/* Developer Options Card (Gated for Development / Debug mode only) */}
+      {isDevToolsEnabled && (
+        <div className="p-4 bg-[#050F2D] border border-border-card/60 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+          <div>
+            <span className="font-pixel text-[11px] text-text-muted font-bold uppercase">
+              EXPLORER MANAGEMENT (DEV TOOLS)
+            </span>
+            <p className="text-[10px] text-text-muted">
+              Switch your preset archetype or reset prospect onboarding progress to test the experience.
+            </p>
+          </div>
 
-        <div className="flex items-center gap-2">
-          <Link
-            href="/onboarding?step=explorer&test=1"
-            className="px-3 py-1 bg-[#071331] border border-border-card text-text-secondary hover:text-white font-pixel text-[11px] transition-colors"
-          >
-            CHANGE ARCHETYPE
-          </Link>
-          <button
-            onClick={() => {
-              if (confirm("Reset player progress to brand new prospect state?")) {
-                resetJourney();
-                alert("Progress reset. You can now re-experience the onboarding journey from the start page!");
-              }
-            }}
-            className="px-3 py-1 bg-red-950/60 border border-red-800 text-red-300 hover:text-white font-pixel text-[11px] transition-colors flex items-center gap-1"
-          >
-            <RotateCcw className="w-3 h-3" /> RESET PROGRESS
-          </button>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/onboarding?step=explorer&test=1"
+              className="px-3 py-1 bg-[#071331] border border-border-card text-text-secondary hover:text-white font-pixel text-[11px] transition-colors"
+            >
+              CHANGE ARCHETYPE
+            </Link>
+            <button
+              onClick={() => {
+                if (confirm("Reset player progress to brand new prospect state?")) {
+                  resetJourney();
+                  alert("Progress reset. Returning to onboarding!");
+                  window.location.href = "/onboarding?step=explorer";
+                }
+              }}
+              className="px-3 py-1 bg-red-950/60 border border-red-800 text-red-300 hover:text-white font-pixel text-[11px] transition-colors flex items-center gap-1"
+            >
+              <RotateCcw className="w-3 h-3" /> RESET PROGRESS
+            </button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

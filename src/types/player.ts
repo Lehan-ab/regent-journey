@@ -113,6 +113,8 @@ export interface Badge {
   unlockedAt: string;
   rarity: "COMMON" | "RARE" | "EPIC" | "LEGENDARY";
   xpAwarded?: number;
+  grandfathered?: boolean;
+  curriculumVersion?: number;
 }
 
 export type OnboardingStep = "explorer" | "companion" | "interests" | "gateway" | "completed";
@@ -176,13 +178,27 @@ export interface ExplorerCustomizationState {
   patches: string[];
 }
 
-export interface PlayerExplorerData {
-  presetId: ExplorerId;
-  customizations: ExplorerCustomizationState;
+export interface PlayerMissionsState {
+  enrolled: string[];
+  completed: string[];
+  verified: string[];
+}
+
+export interface PlayerMembershipState {
+  meetingsAttended: number;
+  meetingsVerified: number;
+  projectsParticipated: number;
+  projectsVerified: number;
+  knowledgeRequirementCompleted: boolean;
+  eligibleForBoardReview: boolean;
+  boardStatus: "not-eligible" | "eligible" | "under-review" | "approved";
 }
 
 export interface PlayerState {
+  version: number;
+  curriculumVersion: number;
   name: string;
+  role: "Prospect" | "Member";
   explorerId: ExplorerId;
   avatar: AvatarConfig;
   explorerCustomization: ExplorerCustomizationState;
@@ -201,10 +217,14 @@ export interface PlayerState {
   onboardingComplete: boolean;
   onboardingStep: OnboardingStep;
   currentWorld: string;
+  currentLocationId: string;
+  currentChapterId: string;
   currentChapterLabel: string;
   completedWorlds: string[];
   completedLessons: string[];
   journeyProgress: number;
   membershipStatus: "PROSPECT" | "EXPLORER" | "OFFICIAL_MEMBER";
+  missions: PlayerMissionsState;
+  membership: PlayerMembershipState;
 }
 

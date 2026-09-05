@@ -7,9 +7,10 @@ import { motion } from "framer-motion";
 import { ArrowRight, Compass, Sparkles, MapPin, ShieldCheck, Flame } from "lucide-react";
 import RetroButton from "@/components/ui/RetroButton";
 import PixelProgressBar from "@/components/ui/PixelProgressBar";
-import { mockUser } from "@/data/mockUserData";
+import { usePlayer } from "@/context/PlayerContext";
 
 export default function RealmOfRegentHero() {
+  const { journeyProgress } = usePlayer();
   return (
     <section className="relative w-full mb-8 overflow-hidden bg-background-card border-2 border-border-card text-white shadow-retro-card-lg">
       {/* Background Pixel Art Panoramic Image */}
@@ -71,7 +72,7 @@ export default function RealmOfRegentHero() {
 
           <div className="flex items-center gap-2 px-3 py-1 bg-[#02091F]/90 border border-regent-gold/60 text-regent-gold font-pixel text-[10px] sm:text-xs backdrop-blur-sm shadow-md">
             <Sparkles className="w-3.5 h-3.5" />
-            <span>35% JOURNEY COMPLETE</span>
+            <span>{journeyProgress}% JOURNEY COMPLETE</span>
           </div>
         </div>
 

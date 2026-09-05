@@ -37,7 +37,7 @@ import { CosmeticCategory, ExplorerCustomizationState } from "@/types/player";
 type TabType = "outfits" | "hair" | "accessories" | "patches" | "progression";
 
 export default function CustomizeExplorerPage() {
-  const { player, updateExplorerCustomization, unlockCosmetic } = usePlayer();
+  const { player, updateExplorerCustomization, unlockCosmetic, isChapterCompleted, isLessonCompleted } = usePlayer();
   const currentExplorer = EXPLORERS[player.explorerId] || EXPLORERS.pathfinder;
 
   // Local active customization state initialized from player state
@@ -744,7 +744,7 @@ export default function CustomizeExplorerPage() {
                     title: "Rotary Roots Completion",
                     reward: "Root Seeker Talisman",
                     condition: "Complete the Rotary Roots world and historical quiz.",
-                    status: player.completedWorlds.includes("Rotary Roots") ? "UNLOCKED" : "IN PROGRESS",
+                    status: isChapterCompleted("loc-rotary-roots") ? "UNLOCKED" : "IN PROGRESS",
                     color: "text-sky-300",
                     border: "border-sky-900/60",
                   },
@@ -753,7 +753,7 @@ export default function CustomizeExplorerPage() {
                     title: "Rota 101 Graduate",
                     reward: "Scholar Gold Pin",
                     condition: "Complete Rota 101 constitutional fundamentals.",
-                    status: player.completedLessons.includes("rota101") ? "UNLOCKED" : "LOCKED",
+                    status: isChapterCompleted("loc-grand-archive") || isLessonCompleted("lesson-7-1") ? "UNLOCKED" : "LOCKED",
                     color: "text-yellow-300",
                     border: "border-yellow-900/60",
                   },
@@ -762,7 +762,7 @@ export default function CustomizeExplorerPage() {
                     title: "Seven Realms Traverser",
                     reward: "Pathfinder Cloak",
                     condition: "Visit and complete tasks across all Seven Realms.",
-                    status: player.completedWorlds.length >= 7 ? "UNLOCKED" : "LOCKED",
+                    status: isChapterCompleted("loc-seven-realms") ? "UNLOCKED" : "LOCKED",
                     color: "text-indigo-300",
                     border: "border-indigo-900/60",
                   },

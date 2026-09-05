@@ -9,20 +9,52 @@ import {
   CompanionId,
   OnboardingStep,
   Badge,
+  PlayerMissionsState,
+  PlayerMembershipState,
 } from "@/types/player";
 import { DEFAULT_AVATAR } from "@/data/avatarOptions";
-import { DEFAULT_EXPLORER_CUSTOMIZATION } from "@/data/customizationsData";
+import { DEFAULT_EXPLORER_CUSTOMIZATION, COSMETIC_ITEMS } from "@/data/customizationsData";
 import { COMPANIONS } from "@/data/companionsData";
 import { CHAPTERS_DATA } from "@/data/chaptersData";
+import {
+  CANONICAL_BADGES,
+  CANONICAL_BADGES_BY_CHAPTER,
+  CANONICAL_BADGE_MAP,
+  BadgeDefinition,
+} from "@/data/canonicalBadges";
+import { CANONICAL_MISSIONS_MAP } from "@/data/missionsData";
+import {
+  CANONICAL_CHAPTER_IDS,
+  CanonicalChapterId,
+  REQUIRED_JOURNEY_LESSON_IDS,
+  getLevelFromXP,
+  isLessonCompleted as selectorIsLessonCompleted,
+  isChapterUnlocked as selectorIsChapterUnlocked,
+  isChapterCompleted as selectorIsChapterCompleted,
+  getChapterProgress as selectorGetChapterProgress,
+  getChapterCTA as selectorGetChapterCTA,
+  getJourneyProgress as selectorGetJourneyProgress,
+  getMembershipReadiness as selectorGetMembershipReadiness,
+  getNextRecommendedAction as selectorGetNextRecommendedAction,
+} from "@/lib/progressionSelectors";
 
-const STORAGE_KEY = "regent_journey_player_v2";
+const STORAGE_KEY = "regent-journey-progress-v1";
+const LEGACY_STORAGE_KEY = "regent_journey_player_v2";
 
-const INITIAL_PLAYER_STATE: PlayerState = {
-  name: "Traveller",
+export const INITIAL_PLAYER_STATE: PlayerState = {
+  version: 1,
+  curriculumVersion: 2,
+  name: "TRAVELLER",
+  role: "Prospect",
   explorerId: "pathfinder",
   avatar: DEFAULT_AVATAR,
   explorerCustomization: DEFAULT_EXPLORER_CUSTOMIZATION,
-  unlockedCosmetics: ["base_explorer", "explorer_satchel", "notebook_accessory", "lantern_accessory"],
+  unlockedCosmetics: [
+    "base_explorer",
+    "explorer_satchel",
+    "notebook_accessory",
+    "lantern_accessory",
+  ],
   projectPatches: [],
   companion: "nova",
   companionRelationship: {
@@ -44,107 +76,307 @@ const INITIAL_PLAYER_STATE: PlayerState = {
   onboardingComplete: false,
   onboardingStep: "explorer",
   currentWorld: "The Gateway",
+  currentLocationId: "loc-gateway",
+  currentChapterId: "loc-gateway",
   currentChapterLabel: "PROLOGUE",
   completedWorlds: [],
   completedLessons: [],
   journeyProgress: 0,
   membershipStatus: "PROSPECT",
-};
-
-export const CHAPTER_BADGES: Record<string, Badge> = {
-  "loc-gateway": {
-    id: "badge-first-step",
-    title: "FIRST STEP",
-    description: "Every Regent starts somewhere. Passed through The Gateway into Seethawaka.",
-    imageUrl: "/images/root_seeker_badge.jpg",
-    unlockedAt: "Just now",
-    rarity: "COMMON",
-    xpAwarded: 50,
+  missions: {
+    enrolled: [],
+    completed: [],
+    verified: [],
   },
-  "loc-rotary-roots": {
-    id: "badge-root-seeker",
-    title: "ROOT SEEKER",
-    description: "Mastered the history of Rotary in 1905, Four-Way Test, Service Above Self, and District 3220 governance.",
-    imageUrl: "/images/root_seeker_badge.jpg",
-    unlockedAt: "Just now",
-    rarity: "RARE",
-    xpAwarded: 150,
-  },
-  "loc-rotaract-harbor": {
-    id: "badge-voyager",
-    title: "VOYAGER",
-    description: "Discovered the 1968 birth of Rotaract, Elevate Rotaract, and the District 3220 network.",
-    imageUrl: "/images/root_seeker_badge.jpg",
-    unlockedAt: "Just now",
-    rarity: "RARE",
-    xpAwarded: 150,
-  },
-  "loc-regent-keep": {
-    id: "badge-regent-pioneer",
-    title: "REGENT PIONEER",
-    description: "Explored RACSR's self-sponsored charter, 2026-27 Board of Officials, culture, and signature initiatives.",
-    imageUrl: "/images/chapter2_odyssey.jpg",
-    unlockedAt: "Just now",
-    rarity: "EPIC",
-    xpAwarded: 200,
-  },
-  "loc-seven-realms": {
-    id: "badge-avenue-master",
-    title: "AVENUE MASTER",
-    description: "Mastered all 7 Avenues of Service and passed the Avenue Project Matching Challenge.",
-    imageUrl: "/images/chapter3_realms.jpg",
-    unlockedAt: "Just now",
-    rarity: "EPIC",
-    xpAwarded: 350,
-  },
-  "loc-project-forge": {
-    id: "badge-master-builder",
-    title: "MASTER BUILDER",
-    description: "Mastered project lifecycles, committee coordination, and sustainable execution in the Project Forge.",
-    imageUrl: "/images/chapter4_forge.jpg",
-    unlockedAt: "Just now",
-    rarity: "EPIC",
-    xpAwarded: 250,
-  },
-  "loc-codewood": {
-    id: "badge-code-bearer",
-    title: "CODE BEARER",
-    description: "Mastered the Regent Code, parliamentary procedure, and ethical standards in Codewood.",
-    imageUrl: "/images/rotary_roots.jpg",
-    unlockedAt: "Just now",
-    rarity: "RARE",
-    xpAwarded: 200,
-  },
-  "loc-grand-archive": {
-    id: "badge-scholar",
-    title: "SCHOLAR",
-    description: "Decoded ROTA 101, club constitutions, bylaws, and district citations in the Grand Archive.",
-    imageUrl: "/images/chapter2_odyssey.jpg",
-    unlockedAt: "Just now",
-    rarity: "RARE",
-    xpAwarded: 200,
-  },
-  "loc-impact-frontier": {
-    id: "badge-trailblazer",
-    title: "TRAILBLAZER",
-    description: "Participated in physical community initiatives and dynamic outreach on the Impact Frontier.",
-    imageUrl: "/images/mission_community.jpg",
-    unlockedAt: "Just now",
-    rarity: "EPIC",
-    xpAwarded: 350,
-  },
-  "loc-membership-citadel": {
-    id: "badge-inducted-regent",
-    title: "INDUCTED REGENT",
-    description: "Reached the high summit, took the Regent Oath, and completed the full induction pathway.",
-    imageUrl: "/images/realm_of_regent_hero.jpg",
-    unlockedAt: "Just now",
-    rarity: "LEGENDARY",
-    xpAwarded: 500,
+  membership: {
+    meetingsAttended: 0,
+    meetingsVerified: 0,
+    projectsParticipated: 0,
+    projectsVerified: 0,
+    knowledgeRequirementCompleted: false,
+    eligibleForBoardReview: false,
+    boardStatus: "not-eligible",
   },
 };
 
-export const FIRST_STEP_BADGE: Badge = CHAPTER_BADGES["loc-gateway"];
+/**
+ * Normalizes and safely migrates legacy state into Curriculum V2.
+ * When migrating from V1 (or unversioned) to V2:
+ * - PRESERVES: Identity (name, archetype, companion, avatar, cosmetics, interests, goal, onboarding, missions).
+ * - RESETS: Obsolete curriculum completion (lessons, chapters, journey %, chapter badges, XP to 0, level to 1, rank to Prospect).
+ */
+export function migrateProgress(savedData: any): PlayerState {
+  if (!savedData || typeof savedData !== "object") {
+    return INITIAL_PLAYER_STATE;
+  }
+
+  // 1. Detect Curriculum Version
+  const isCurriculumV1 = !savedData.curriculumVersion || savedData.curriculumVersion < 2;
+
+  // 2. Core Profile Identity (Preserved)
+  const rawName = typeof savedData.name === "string" && savedData.name.trim() ? savedData.name.trim() : "TRAVELLER";
+  const name = rawName === "Traveller" ? "TRAVELLER" : rawName;
+  const role: "Prospect" | "Member" = savedData.role === "Member" ? "Member" : "Prospect";
+  const explorerId: ExplorerId = savedData.explorerId || "pathfinder";
+
+  const avatar: AvatarConfig = {
+    ...DEFAULT_AVATAR,
+    ...(savedData.avatar || {}),
+  };
+
+  const explorerCustomization: ExplorerCustomizationState = {
+    ...DEFAULT_EXPLORER_CUSTOMIZATION,
+    ...(savedData.explorerCustomization || {}),
+  };
+
+  const unlockedCosmetics: string[] = Array.from(
+    new Set([
+      ...INITIAL_PLAYER_STATE.unlockedCosmetics,
+      ...(Array.isArray(savedData.unlockedCosmetics) ? savedData.unlockedCosmetics : []),
+    ])
+  );
+
+  const projectPatches: string[] = Array.isArray(savedData.projectPatches)
+    ? Array.from(new Set(savedData.projectPatches))
+    : [];
+
+  const companion: CompanionId =
+    savedData.companion === "raya" || savedData.companion === "kai" || savedData.companion === "nova"
+      ? savedData.companion
+      : "nova";
+
+  const companionInfo = COMPANIONS[companion] || COMPANIONS.nova;
+  const companionRelationship = {
+    id: companion,
+    name: companionInfo.name,
+    archetype: companionInfo.archetype,
+    relationshipXP: isCurriculumV1 ? 0 : (savedData.companionRelationship?.relationshipXP || 0),
+    relationshipLevel: isCurriculumV1 ? 1 : (savedData.companionRelationship?.relationshipLevel || 1),
+    trustLevel: isCurriculumV1 ? "New Companion" : (savedData.companionRelationship?.trustLevel || "New Companion"),
+  };
+
+  const interests: string[] = Array.isArray(savedData.interests) ? savedData.interests : [];
+  const primaryGoal: string = typeof savedData.primaryGoal === "string" ? savedData.primaryGoal : "";
+
+  // 3. Onboarding State (Preserved)
+  const onboardingComplete: boolean = Boolean(savedData.onboardingComplete);
+  const onboardingStep: OnboardingStep = savedData.onboardingStep || (onboardingComplete ? "completed" : "explorer");
+
+  // 4. Non-Curriculum Missions State (Preserved)
+  const rawMissions = savedData.missions;
+  let enrolledMissions: string[] = [];
+  let completedMissions: string[] = [];
+  let verifiedMissions: string[] = [];
+
+  if (Array.isArray(rawMissions)) {
+    // Support legacy array format of mission objects
+    for (const m of rawMissions) {
+      if (m && typeof m === "object" && typeof m.id === "string") {
+        if (m.completed) completedMissions.push(m.id);
+        else enrolledMissions.push(m.id);
+        if (m.verified) verifiedMissions.push(m.id);
+      }
+    }
+  } else if (rawMissions && typeof rawMissions === "object") {
+    if (Array.isArray(rawMissions.enrolled)) {
+      enrolledMissions = rawMissions.enrolled.filter((id: unknown): id is string => typeof id === "string");
+    }
+    if (Array.isArray(rawMissions.completed)) {
+      completedMissions = rawMissions.completed.filter((id: unknown): id is string => typeof id === "string");
+    }
+    if (Array.isArray(rawMissions.verified)) {
+      verifiedMissions = rawMissions.verified.filter((id: unknown): id is string => typeof id === "string");
+    }
+  }
+
+  const missions: PlayerMissionsState = {
+    enrolled: Array.from(new Set(enrolledMissions)),
+    completed: Array.from(new Set(completedMissions)),
+    verified: Array.from(new Set(verifiedMissions)),
+  };
+
+  // 5. Real-World Participation Tracking (Preserved)
+  const rawMembership = savedData.membership || {};
+  const meetingsAttended = Number(rawMembership.meetingsAttended) || 0;
+  const meetingsVerified = Number(rawMembership.meetingsVerified) || 0;
+  const projectsParticipated = Number(rawMembership.projectsParticipated) || 0;
+  const projectsVerified = Number(rawMembership.projectsVerified) || 0;
+
+  // --- CLEAN CURRICULUM V2 RESET RULE ---
+  if (isCurriculumV1) {
+    return {
+      version: 1,
+      curriculumVersion: 2,
+      name,
+      role,
+      explorerId,
+      avatar,
+      explorerCustomization,
+      unlockedCosmetics,
+      projectPatches,
+      companion,
+      companionRelationship,
+      interests,
+      primaryGoal,
+      xp: 0,
+      level: 1,
+      xpToNextLevel: 100,
+      rank: "Prospect",
+      streak: 1,
+      badges: [],
+      onboardingComplete,
+      onboardingStep,
+      currentWorld: "The Gateway",
+      currentLocationId: "loc-gateway",
+      currentChapterId: "loc-gateway",
+      currentChapterLabel: "PROLOGUE",
+      completedWorlds: [],
+      completedLessons: [],
+      journeyProgress: 0,
+      membershipStatus: onboardingComplete ? "EXPLORER" : "PROSPECT",
+      missions,
+      membership: {
+        meetingsAttended,
+        meetingsVerified,
+        projectsParticipated,
+        projectsVerified,
+        knowledgeRequirementCompleted: false,
+        eligibleForBoardReview: false,
+        boardStatus: "not-eligible",
+      },
+    };
+  }
+
+  // --- CURRICULUM V2 VALIDATION & DERIVATION ---
+  const rawLessons = Array.isArray(savedData.completedLessons) ? savedData.completedLessons : [];
+  const completedLessons: string[] = Array.from(
+    new Set(rawLessons.filter((id: string) => REQUIRED_JOURNEY_LESSON_IDS.includes(id)))
+  );
+
+  const completedWorlds: string[] = CANONICAL_CHAPTER_IDS.filter((chapId) => {
+    const chapter = CHAPTERS_DATA[chapId];
+    if (!chapter || !chapter.lessons || chapter.lessons.length === 0) return false;
+    return chapter.lessons.every((l) => completedLessons.includes(l.id));
+  });
+
+  const rawXp = typeof savedData.xp === "number" && !isNaN(savedData.xp) ? Math.max(0, savedData.xp) : 0;
+  const { level, rank, xpToNextLevel } = getLevelFromXP(rawXp);
+
+  // Derive chapter badges strictly from verified V2 completion
+  const validBadgeMap = new Map<string, Badge>();
+  for (const chapId of completedWorlds) {
+    const canonicalBadge = CANONICAL_BADGES_BY_CHAPTER[chapId];
+    if (canonicalBadge) {
+      validBadgeMap.set(canonicalBadge.id, {
+        id: canonicalBadge.id,
+        title: canonicalBadge.title,
+        description: canonicalBadge.description,
+        imageUrl: canonicalBadge.imageUrl,
+        unlockedAt: "Completed Milestone",
+        rarity: canonicalBadge.rarity,
+        xpAwarded: canonicalBadge.xpAwarded,
+        curriculumVersion: 2,
+      });
+    }
+  }
+
+  const rawBadges: any[] = Array.isArray(savedData.badges) ? savedData.badges : [];
+  for (const b of rawBadges) {
+    if (b && typeof b.id === "string" && CANONICAL_BADGE_MAP[b.id]) {
+      const def = CANONICAL_BADGE_MAP[b.id];
+      if (def.category === "JOURNEY" && def.chapterId && !completedWorlds.includes(def.chapterId)) {
+        continue;
+      }
+      validBadgeMap.set(b.id, {
+        id: def.id,
+        title: def.title,
+        description: def.description,
+        imageUrl: def.imageUrl,
+        unlockedAt: b.unlockedAt || "Unlocked",
+        rarity: def.rarity,
+        xpAwarded: def.xpAwarded,
+        curriculumVersion: 2,
+      });
+    }
+  }
+
+  const badges: Badge[] = Array.from(validBadgeMap.values());
+
+  let activeChapterId: CanonicalChapterId = "loc-gateway";
+  for (const chapId of CANONICAL_CHAPTER_IDS) {
+    if (!completedWorlds.includes(chapId)) {
+      activeChapterId = chapId;
+      break;
+    }
+  }
+
+  const activeChapterData = CHAPTERS_DATA[activeChapterId] || CHAPTERS_DATA["loc-gateway"];
+  const currentWorld = activeChapterData.worldName;
+  const currentLocationId = activeChapterId;
+  const currentChapterId = activeChapterId;
+  const currentChapterLabel = activeChapterData.chapterLabel;
+
+  const readiness = selectorGetMembershipReadiness({
+    ...INITIAL_PLAYER_STATE,
+    completedLessons,
+    membership: {
+      meetingsAttended,
+      meetingsVerified,
+      projectsParticipated,
+      projectsVerified,
+      knowledgeRequirementCompleted: false,
+      eligibleForBoardReview: false,
+      boardStatus: (rawMembership.boardStatus || "not-eligible") as any,
+    },
+  });
+
+  const journeyProgress = selectorGetJourneyProgress({
+    ...INITIAL_PLAYER_STATE,
+    completedLessons,
+  });
+
+  return {
+    version: 1,
+    curriculumVersion: 2,
+    name,
+    role,
+    explorerId,
+    avatar,
+    explorerCustomization,
+    unlockedCosmetics,
+    projectPatches,
+    companion,
+    companionRelationship,
+    interests,
+    primaryGoal,
+    xp: rawXp,
+    level,
+    xpToNextLevel,
+    rank,
+    streak: Math.max(1, Number(savedData.streak) || 1),
+    badges,
+    onboardingComplete,
+    onboardingStep,
+    currentWorld,
+    currentLocationId,
+    currentChapterId,
+    currentChapterLabel,
+    completedWorlds,
+    completedLessons,
+    journeyProgress,
+    membershipStatus: onboardingComplete ? "EXPLORER" : "PROSPECT",
+    missions,
+    membership: {
+      meetingsAttended,
+      meetingsVerified,
+      projectsParticipated,
+      projectsVerified,
+      knowledgeRequirementCompleted: readiness.knowledgeComplete,
+      eligibleForBoardReview: readiness.eligibleForBoardReview,
+      boardStatus: readiness.boardStatus as any,
+    },
+  };
+}
 
 interface PlayerContextType {
   player: PlayerState;
@@ -167,75 +399,52 @@ interface PlayerContextType {
     lessonId: string,
     chapterId: string,
     xpReward: number
-  ) => { chapterCompleted: boolean; badgeUnlocked?: Badge };
+  ) => { chapterCompleted: boolean; badgeUnlocked?: Badge; alreadyCompleted?: boolean };
+  enrollMission: (missionId: string) => void;
+  verifyMission: (missionId: string, officerName?: string) => void;
   isLessonCompleted: (lessonId: string) => boolean;
   isChapterUnlocked: (chapterId: string) => boolean;
+  isChapterCompleted: (chapterId: string) => boolean;
+  getChapterProgress: (chapterId: string) => {
+    completedCount: number;
+    totalCount: number;
+    percentage: number;
+    isCompleted: boolean;
+    isUnlocked: boolean;
+  };
+  getChapterCTA: (chapterId: string) => {
+    text: "LOCKED" | "BEGIN CHAPTER" | "CONTINUE JOURNEY" | "REVISIT CHAPTER";
+    variant: "blue" | "outline" | "disabled";
+    isLocked: boolean;
+    href: string;
+  };
+  journeyProgress: number;
+  membershipReadiness: ReturnType<typeof selectorGetMembershipReadiness>;
+  nextRecommendedAction: ReturnType<typeof selectorGetNextRecommendedAction>;
 }
 
 const PlayerContext = createContext<PlayerContextType | null>(null);
-
-function calculateLevelAndRank(xp: number) {
-  let level = 1;
-  let rank = "Prospect";
-  let xpToNextLevel = 100;
-
-  if (xp >= 500) {
-    level = 4;
-    rank = "Senior Regent";
-    xpToNextLevel = 800;
-  } else if (xp >= 250) {
-    level = 3;
-    rank = "Pathfinder";
-    xpToNextLevel = 500;
-  } else if (xp >= 100) {
-    level = 2;
-    rank = "Explorer";
-    xpToNextLevel = 250;
-  } else {
-    level = 1;
-    rank = "Prospect";
-    xpToNextLevel = 100;
-  }
-
-  return { level, rank, xpToNextLevel };
-}
 
 export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const [player, setPlayer] = useState<PlayerState>(INITIAL_PLAYER_STATE);
   const [isHydrated, setIsHydrated] = useState(false);
 
-  // Load from localStorage on mount
+  // Load from localStorage on mount with automated safe migration
   useEffect(() => {
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
+      let stored = localStorage.getItem(STORAGE_KEY);
+      // Fallback: check legacy storage key if v1 is not present
+      if (!stored) {
+        stored = localStorage.getItem(LEGACY_STORAGE_KEY);
+      }
+
       if (stored) {
-        const parsed = JSON.parse(stored) as PlayerState;
-        // Merge with initial state to ensure any new keys exist
-        setPlayer((prev) => ({
-          ...INITIAL_PLAYER_STATE,
-          ...parsed,
-          explorerId: parsed.explorerId || "pathfinder",
-          avatar: { ...INITIAL_PLAYER_STATE.avatar, ...(parsed.avatar || {}) },
-          explorerCustomization: {
-            ...INITIAL_PLAYER_STATE.explorerCustomization,
-            ...(parsed.explorerCustomization || {}),
-          },
-          unlockedCosmetics: Array.from(
-            new Set([
-              ...(INITIAL_PLAYER_STATE.unlockedCosmetics || []),
-              ...(parsed.unlockedCosmetics || []),
-            ])
-          ),
-          projectPatches: Array.from(
-            new Set([
-              ...(INITIAL_PLAYER_STATE.projectPatches || []),
-              ...(parsed.projectPatches || []),
-            ])
-          ),
-        }));
+        const parsed = JSON.parse(stored);
+        const migrated = migrateProgress(parsed);
+        setPlayer(migrated);
       }
     } catch (e) {
-      console.warn("Failed to load player state from localStorage", e);
+      console.warn("Failed to load/migrate player state from localStorage", e);
     } finally {
       setIsHydrated(true);
     }
@@ -252,7 +461,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   }, [player, isHydrated]);
 
   const setName = (name: string) => {
-    setPlayer((prev) => ({ ...prev, name: name.trim() || "Traveller" }));
+    setPlayer((prev) => ({ ...prev, name: name.trim() || "TRAVELLER" }));
   };
 
   const setExplorerId = (explorerId: ExplorerId) => {
@@ -307,9 +516,18 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         id: companion,
         name: compInfo.name,
         archetype: compInfo.archetype,
-        relationshipXP: prev.companionRelationship?.id === companion ? prev.companionRelationship.relationshipXP : 0,
-        relationshipLevel: prev.companionRelationship?.id === companion ? prev.companionRelationship.relationshipLevel : 1,
-        trustLevel: prev.companionRelationship?.id === companion ? prev.companionRelationship.trustLevel : "New Companion",
+        relationshipXP:
+          prev.companionRelationship?.id === companion
+            ? prev.companionRelationship.relationshipXP
+            : 0,
+        relationshipLevel:
+          prev.companionRelationship?.id === companion
+            ? prev.companionRelationship.relationshipLevel
+            : 1,
+        trustLevel:
+          prev.companionRelationship?.id === companion
+            ? prev.companionRelationship.trustLevel
+            : "New Companion",
       },
     }));
   };
@@ -325,7 +543,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const addXp = (amount: number) => {
     setPlayer((prev) => {
       const newXp = prev.xp + amount;
-      const { level, rank, xpToNextLevel } = calculateLevelAndRank(newXp);
+      const { level, rank, xpToNextLevel } = getLevelFromXP(newXp);
       return {
         ...prev,
         xp: newXp,
@@ -352,65 +570,68 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     setPlayer((prev) => ({ ...prev, onboardingStep }));
   };
 
+  /**
+   * Completes onboarding WITHOUT completing The Gateway chapter.
+   * Gateway becomes the active first chapter with 0/2 lessons completed.
+   */
   const completeOnboarding = () => {
     setPlayer((prev) => {
-      const hasFirstStepBadge = prev.badges.some((b) => b.id === FIRST_STEP_BADGE.id);
-      const updatedBadges = hasFirstStepBadge
-        ? prev.badges
-        : [...prev.badges, FIRST_STEP_BADGE];
-
-      const newXp = hasFirstStepBadge ? prev.xp : prev.xp + (FIRST_STEP_BADGE.xpAwarded || 50);
-      const { level, rank, xpToNextLevel } = calculateLevelAndRank(newXp);
-
       return {
         ...prev,
-        xp: newXp,
-        level,
-        rank,
-        xpToNextLevel,
-        badges: updatedBadges,
         onboardingComplete: true,
         onboardingStep: "completed",
-        currentWorld: "Rotary Roots",
-        currentChapterLabel: "CHAPTER 1",
-        completedWorlds: Array.from(new Set([...prev.completedWorlds, "The Gateway"])),
-        journeyProgress: Math.max(prev.journeyProgress, 10),
+        currentWorld: "The Gateway",
+        currentLocationId: "loc-gateway",
+        currentChapterId: "loc-gateway",
+        currentChapterLabel: "PROLOGUE",
         membershipStatus: "EXPLORER",
       };
     });
   };
 
+  /**
+   * Resets all prospect progress and purges localStorage.
+   */
   const resetJourney = () => {
     try {
       localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(LEGACY_STORAGE_KEY);
     } catch (e) {
       console.warn("Failed to clear player storage", e);
     }
     setPlayer(INITIAL_PLAYER_STATE);
   };
 
+  /**
+   * Idempotently completes a lesson, awards XP once, updates level, checks chapter completion,
+   * unlocks chapter badge and milestone cosmetics, and advances next chapter when appropriate.
+   */
   const completeLesson = (
     lessonId: string,
     chapterId: string,
     xpReward: number
-  ): { chapterCompleted: boolean; badgeUnlocked?: Badge } => {
+  ): { chapterCompleted: boolean; badgeUnlocked?: Badge; alreadyCompleted?: boolean } => {
     let isNewlyCompletedChapter = false;
     let newBadge: Badge | undefined = undefined;
+    let isAlreadyDone = false;
 
     setPlayer((prev) => {
-      const isAlreadyCompleted = prev.completedLessons?.includes(lessonId);
-      const updatedLessons = isAlreadyCompleted
-        ? prev.completedLessons
-        : [...(prev.completedLessons || []), lessonId];
+      // 1. Check idempotency
+      if (prev.completedLessons?.includes(lessonId)) {
+        isAlreadyDone = true;
+        return prev;
+      }
 
-      const additionalXp = isAlreadyCompleted ? 0 : xpReward;
-      const newXp = prev.xp + additionalXp;
-      const { level, rank, xpToNextLevel } = calculateLevelAndRank(newXp);
+      const updatedLessons = [...(prev.completedLessons || []), lessonId];
+      let runningXp = prev.xp + xpReward;
 
       const chapter = CHAPTERS_DATA[chapterId];
       let updatedWorlds = prev.completedWorlds || [];
       let updatedBadges = prev.badges || [];
+      let updatedCosmetics = prev.unlockedCosmetics || [];
       let nextWorld = prev.currentWorld;
+      let nextChapterId = prev.currentChapterId;
+      let nextLocationId = prev.currentLocationId;
       let nextChapterLabel = prev.currentChapterLabel;
 
       if (chapter) {
@@ -423,40 +644,183 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
           isNewlyCompletedChapter = true;
           updatedWorlds = Array.from(new Set([...updatedWorlds, chapterId]));
 
-          const badgeReward = CHAPTER_BADGES[chapterId];
-          if (badgeReward && !updatedBadges.some((b) => b.id === badgeReward.id)) {
-            newBadge = badgeReward;
-            updatedBadges = [...updatedBadges, badgeReward];
+          // Award chapter badge from canonical registry
+          const badgeDef = CANONICAL_BADGES_BY_CHAPTER[chapterId];
+          if (badgeDef && !updatedBadges.some((b) => b.id === badgeDef.id)) {
+            newBadge = {
+              id: badgeDef.id,
+              title: badgeDef.title,
+              description: badgeDef.description,
+              imageUrl: badgeDef.imageUrl,
+              unlockedAt: "Just now",
+              rarity: badgeDef.rarity,
+              xpAwarded: badgeDef.xpAwarded,
+            };
+            updatedBadges = [...updatedBadges, newBadge];
+            runningXp += badgeDef.xpAwarded;
           }
 
-          const chapterSequence = [
-            "loc-gateway",
-            "loc-rotary-roots",
-            "loc-rotaract-harbor",
-            "loc-regent-keep",
-            "loc-seven-realms",
-            "loc-project-forge",
-            "loc-codewood",
-            "loc-grand-archive",
-            "loc-impact-frontier",
-            "loc-membership-citadel",
-          ];
-          const currIdx = chapterSequence.indexOf(chapterId);
-          if (currIdx >= 0 && currIdx < chapterSequence.length - 1) {
-            const nextChapId = chapterSequence[currIdx + 1];
-            const nextChapter = CHAPTERS_DATA[nextChapId];
-            if (nextChapter) {
-              nextWorld = nextChapter.worldName;
-              nextChapterLabel = nextChapter.chapterLabel;
+          // Advance active chapter position to next chapter in canonical sequence
+          const currIdx = CANONICAL_CHAPTER_IDS.indexOf(chapterId as CanonicalChapterId);
+          if (currIdx >= 0 && currIdx < CANONICAL_CHAPTER_IDS.length - 1) {
+            const nextChapId = CANONICAL_CHAPTER_IDS[currIdx + 1];
+            const nextChapDetails = CHAPTERS_DATA[nextChapId];
+            if (nextChapDetails) {
+              nextWorld = nextChapDetails.worldName;
+              nextChapterId = nextChapId;
+              nextLocationId = nextChapId;
+              nextChapterLabel = nextChapDetails.chapterLabel;
+            }
+          }
+
+          // Check and unlock milestone cosmetics linked to chapter completion
+          for (const item of COSMETIC_ITEMS) {
+            if (
+              item.unlockRequirement.type === "world_complete" &&
+              item.unlockRequirement.targetId === chapterId &&
+              !updatedCosmetics.includes(item.id)
+            ) {
+              updatedCosmetics = [...updatedCosmetics, item.id];
             }
           }
         }
       }
 
-      const calculatedProgress = Math.min(
-        100,
-        Math.round((updatedLessons.length / 19) * 100)
-      );
+      // Check and unlock milestone cosmetics linked to lesson completion
+      for (const item of COSMETIC_ITEMS) {
+        if (
+          item.unlockRequirement.type === "lesson_complete" &&
+          item.unlockRequirement.targetId === lessonId &&
+          !updatedCosmetics.includes(item.id)
+        ) {
+          updatedCosmetics = [...updatedCosmetics, item.id];
+        }
+      }
+
+      const { level, rank, xpToNextLevel } = getLevelFromXP(runningXp);
+      const calculatedProgress = selectorGetJourneyProgress({
+        ...prev,
+        completedLessons: updatedLessons,
+      });
+
+      const knowledgeRequirementCompleted =
+        updatedWorlds.includes("loc-gateway") &&
+        updatedWorlds.includes("loc-rotary-roots") &&
+        updatedWorlds.includes("loc-rotaract-harbor") &&
+        updatedWorlds.includes("loc-regent-keep") &&
+        updatedWorlds.includes("loc-seven-realms");
+
+      return {
+        ...prev,
+        xp: runningXp,
+        level,
+        rank,
+        xpToNextLevel,
+        completedLessons: updatedLessons,
+        completedWorlds: updatedWorlds,
+        badges: updatedBadges,
+        unlockedCosmetics: updatedCosmetics,
+        currentWorld: nextWorld,
+        currentLocationId: nextLocationId,
+        currentChapterId: nextChapterId,
+        currentChapterLabel: nextChapterLabel,
+        journeyProgress: calculatedProgress,
+        membership: {
+          ...prev.membership,
+          knowledgeRequirementCompleted,
+          eligibleForBoardReview:
+            knowledgeRequirementCompleted &&
+            (prev.membership?.meetingsVerified || 0) >= 2 &&
+            (prev.membership?.projectsVerified || 0) >= 2,
+        },
+      };
+    });
+
+    return {
+      chapterCompleted: isNewlyCompletedChapter,
+      badgeUnlocked: newBadge,
+      alreadyCompleted: isAlreadyDone,
+    };
+  };
+
+  /**
+   * Enrolls in a mission without awarding XP or faking verification.
+   */
+  const enrollMission = (missionId: string) => {
+    setPlayer((prev) => {
+      const currentEnrolled = prev.missions?.enrolled || [];
+      if (currentEnrolled.includes(missionId)) return prev;
+      return {
+        ...prev,
+        missions: {
+          ...prev.missions,
+          enrolled: [...currentEnrolled, missionId],
+        },
+      };
+    });
+  };
+
+  /**
+   * Verifies a mission attendance/participation (intended for Officer / Dev testing).
+   * Awards XP once and increments verified meetings or projects count.
+   */
+  const verifyMission = (missionId: string, officerName?: string) => {
+    setPlayer((prev) => {
+      const currentVerified = prev.missions?.verified || [];
+      if (currentVerified.includes(missionId)) return prev;
+
+      const missionDef = CANONICAL_MISSIONS_MAP[missionId];
+      const xpReward = missionDef?.rewardXp || 100;
+      const newXp = prev.xp + xpReward;
+      const { level, rank, xpToNextLevel } = getLevelFromXP(newXp);
+
+      const isMeeting = missionDef?.type === "General Meeting" || missionDef?.type === "Club Service";
+      const meetingsVerified = isMeeting
+        ? (prev.membership?.meetingsVerified || 0) + 1
+        : prev.membership?.meetingsVerified || 0;
+      const projectsVerified = !isMeeting
+        ? (prev.membership?.projectsVerified || 0) + 1
+        : prev.membership?.projectsVerified || 0;
+
+      const knowledgeRequirementCompleted = prev.membership?.knowledgeRequirementCompleted || false;
+      const eligibleForBoardReview =
+        knowledgeRequirementCompleted && meetingsVerified >= 2 && projectsVerified >= 2;
+
+      // Check if real-world badges unlock
+      let updatedBadges = prev.badges || [];
+      if (isMeeting) {
+        const fellowshipBadge = CANONICAL_BADGE_MAP["badge-first-fellowship"];
+        if (fellowshipBadge && !updatedBadges.some((b) => b.id === fellowshipBadge.id)) {
+          updatedBadges = [
+            ...updatedBadges,
+            {
+              id: fellowshipBadge.id,
+              title: fellowshipBadge.title,
+              description: fellowshipBadge.description,
+              imageUrl: fellowshipBadge.imageUrl,
+              unlockedAt: `Verified by ${officerName || "Officer"}`,
+              rarity: fellowshipBadge.rarity,
+              xpAwarded: fellowshipBadge.xpAwarded,
+            },
+          ];
+        }
+      } else {
+        const communityBadge = CANONICAL_BADGE_MAP["badge-community-hero"];
+        if (communityBadge && !updatedBadges.some((b) => b.id === communityBadge.id)) {
+          updatedBadges = [
+            ...updatedBadges,
+            {
+              id: communityBadge.id,
+              title: communityBadge.title,
+              description: communityBadge.description,
+              imageUrl: communityBadge.imageUrl,
+              unlockedAt: `Verified by ${officerName || "Officer"}`,
+              rarity: communityBadge.rarity,
+              xpAwarded: communityBadge.xpAwarded,
+            },
+          ];
+        }
+      }
 
       return {
         ...prev,
@@ -464,46 +828,30 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         level,
         rank,
         xpToNextLevel,
-        completedLessons: updatedLessons,
-        completedWorlds: updatedWorlds,
         badges: updatedBadges,
-        currentWorld: nextWorld,
-        currentChapterLabel: nextChapterLabel,
-        journeyProgress: Math.max(prev.journeyProgress, calculatedProgress),
+        missions: {
+          ...prev.missions,
+          verified: [...currentVerified, missionId],
+        },
+        membership: {
+          ...prev.membership,
+          meetingsVerified,
+          projectsVerified,
+          eligibleForBoardReview,
+        },
       };
     });
-
-    return {
-      chapterCompleted: isNewlyCompletedChapter,
-      badgeUnlocked: newBadge,
-    };
   };
 
-  const isLessonCompleted = (lessonId: string): boolean => {
-    return player.completedLessons?.includes(lessonId) || false;
-  };
-
-  const isChapterUnlocked = (chapterId: string): boolean => {
-    if (chapterId === "loc-gateway" || chapterId === "loc-rotary-roots") {
-      return true;
-    }
-    const chapterSequence = [
-      "loc-gateway",
-      "loc-rotary-roots",
-      "loc-rotaract-harbor",
-      "loc-regent-keep",
-      "loc-seven-realms",
-      "loc-project-forge",
-      "loc-codewood",
-      "loc-grand-archive",
-      "loc-impact-frontier",
-      "loc-membership-citadel",
-    ];
-    const idx = chapterSequence.indexOf(chapterId);
-    if (idx <= 0) return true;
-    const prevChapterId = chapterSequence[idx - 1];
-    return player.completedWorlds?.includes(prevChapterId) || false;
-  };
+  // Pure derived state selectors bound to current player
+  const isLessonCompleted = (lessonId: string) => selectorIsLessonCompleted(player, lessonId);
+  const isChapterUnlocked = (chapterId: string) => selectorIsChapterUnlocked(player, chapterId);
+  const isChapterCompleted = (chapterId: string) => selectorIsChapterCompleted(player, chapterId);
+  const getChapterProgress = (chapterId: string) => selectorGetChapterProgress(player, chapterId);
+  const getChapterCTA = (chapterId: string) => selectorGetChapterCTA(player, chapterId);
+  const journeyProgress = selectorGetJourneyProgress(player);
+  const membershipReadiness = selectorGetMembershipReadiness(player);
+  const nextRecommendedAction = selectorGetNextRecommendedAction(player);
 
   return (
     <PlayerContext.Provider
@@ -525,8 +873,16 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         completeOnboarding,
         resetJourney,
         completeLesson,
+        enrollMission,
+        verifyMission,
         isLessonCompleted,
         isChapterUnlocked,
+        isChapterCompleted,
+        getChapterProgress,
+        getChapterCTA,
+        journeyProgress,
+        membershipReadiness,
+        nextRecommendedAction,
       }}
     >
       {children}

@@ -1,33 +1,20 @@
 "use client";
 
 import React from "react";
-import { ArrowRight, BookOpen, Sparkles } from "lucide-react";
+import { ArrowRight, BookOpen, Sparkles, Compass } from "lucide-react";
 import RetroCard from "@/components/ui/RetroCard";
 import RetroButton from "@/components/ui/RetroButton";
 import { usePlayer } from "@/context/PlayerContext";
-import { CHAPTERS_DATA } from "@/data/chaptersData";
 
 export default function NextStepCard() {
-  const { player } = usePlayer();
+  const { nextRecommendedAction } = usePlayer();
 
-  // Find the first chapter that has an incomplete lesson, or fallback to rotary-roots
-  const activeChapter =
-    Object.values(CHAPTERS_DATA).find((chap) =>
-      chap.lessons.some((l) => !player.completedLessons?.includes(l.id))
-    ) || CHAPTERS_DATA["loc-rotary-roots"];
-
-  const nextLesson =
-    activeChapter?.lessons.find((l) => !player.completedLessons?.includes(l.id)) ||
-    activeChapter?.lessons[0];
-
-  const chapterLabel = activeChapter?.chapterLabel || player.currentChapterLabel || "CHAPTER 1";
-  const journeyTitle = activeChapter?.worldName || player.currentWorld || "Rotary Roots";
-  const lessonTitle = nextLesson?.title || "Service Above Self";
-  const lessonSubtitle = nextLesson?.subtitle || "Master the core ethos of Rotary service.";
-  const xpReward = nextLesson?.xpReward || 35;
-  const targetHref = activeChapter
-    ? `/journey/${activeChapter.id}${nextLesson ? `?lesson=${nextLesson.id}` : ""}`
-    : "/journey";
+  const chapterLabel = nextRecommendedAction.chapterLabel || "PROLOGUE";
+  const journeyTitle = nextRecommendedAction.worldName || "The Gateway";
+  const lessonTitle = nextRecommendedAction.title;
+  const lessonSubtitle = nextRecommendedAction.subtitle;
+  const xpReward = nextRecommendedAction.xpReward || 25;
+  const targetHref = nextRecommendedAction.href;
 
   return (
     <RetroCard
@@ -42,9 +29,9 @@ export default function NextStepCard() {
             <span className="font-pixel text-[11px] sm:text-xs text-regent-gold font-bold uppercase tracking-wider truncate">
               {chapterLabel}: {journeyTitle.toUpperCase()}
             </span>
-            {nextLesson && (
+            {nextRecommendedAction.lessonNumber && (
               <span className="text-text-muted text-[11px] font-pixel shrink-0">
-                • Lesson {nextLesson.lessonNumber}
+                • Lesson {nextRecommendedAction.lessonNumber}
               </span>
             )}
           </div>
@@ -73,7 +60,7 @@ export default function NextStepCard() {
             icon={<ArrowRight className="w-3.5 h-3.5" />}
             iconPosition="right"
           >
-            CONTINUE JOURNEY
+            CONTINUE QUEST
           </RetroButton>
         </div>
       </div>

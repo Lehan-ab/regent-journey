@@ -9,7 +9,7 @@ export const COMPANIONS: Record<CompanionId, CompanionInfo> = {
     type: "Magical Owl Companion",
     tagline: "Mystic Lorekeeper & Scholar",
     motto: "“Knowledge lights the path ahead.”",
-    personality: ["Thoughtful", "Intelligent", "Calm", "Curious", "Supportive"],
+    personality: ["Thoughtful", "Intelligent", "Calm", "Curious", "Supportive", "Reflective"],
     keyTraits: ["Curious", "Thoughtful", "Supportive"],
     role: "Helps you understand Rotary roots, learn Regent traditions, explore club history, master lessons, and discover hidden knowledge.",
     description:
@@ -38,7 +38,7 @@ export const COMPANIONS: Record<CompanionId, CompanionInfo> = {
       "“Welcome back, {name}. There is much knowledge to uncover today.”",
       "“Rotary Roots contains the foundational philosophy of service, {name}.”",
       "“According to my archives, completing your next lesson will yield optimal XP, {name}.”",
-      "“The seven avenues represent distinct disciplines. We shall master them all in time.”",
+      "“The eleven avenues represent distinct disciplines. We shall master them all in time.”",
       "“Curiosity is the mark of a true Regent, {name}.”",
     ],
     themeColor: "#20A9F6",
@@ -52,7 +52,7 @@ export const COMPANIONS: Record<CompanionId, CompanionInfo> = {
     type: "Forest Fox Companion",
     tagline: "Bold & Adventurous Scout",
     motto: "“The next adventure is always waiting.”",
-    personality: ["Energetic", "Enthusiastic", "Adventurous", "Playful", "Motivational"],
+    personality: ["Energetic", "Adventurous", "Playful", "Motivational", "Bold", "Action-oriented"],
     keyTraits: ["Energetic", "Adventurous", "Motivated"],
     role: "Helps you stay motivated, complete quests, jump into community projects, explore new avenues, and discover exciting experiences.",
     description:
@@ -95,7 +95,7 @@ export const COMPANIONS: Record<CompanionId, CompanionInfo> = {
     type: "Forest Spirit Deer",
     tagline: "Calm & Purposeful Leader",
     motto: "“Every great journey begins with a plan.”",
-    personality: ["Practical", "Focused", "Reliable", "Strategic", "Confident"],
+    personality: ["Practical", "Focused", "Reliable", "Strategic", "Structured", "Confident"],
     keyTraits: ["Strategic", "Reliable", "Focused"],
     role: "Helps you understand leadership, organize impactful projects, develop practical skills, master club systems, and complete missions efficiently.",
     description:

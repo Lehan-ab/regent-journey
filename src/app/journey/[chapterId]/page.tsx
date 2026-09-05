@@ -26,10 +26,117 @@ import RetroButton from "@/components/ui/RetroButton";
 import PixelCompanion from "@/components/companion/PixelCompanion";
 import StorybookDialogueView from "@/components/story/StorybookDialogueView";
 import CompanionGuidanceModal from "@/components/story/CompanionGuidanceModal";
+import ChapterIntroCinematic from "@/components/story/ChapterIntroCinematic";
+import ChapterCompletionCinematic from "@/components/story/ChapterCompletionCinematic";
+import { getNPCForChapter } from "@/data/npcRegistry";
 import { usePlayer } from "@/context/PlayerContext";
 import { CHAPTERS_DATA, LessonData, ChapterDetails } from "@/data/chaptersData";
 import { realmLocations } from "@/data/realmMapLocations";
 import { audioManager } from "@/lib/audioManager";
+
+
+interface TrialSkin {
+  containerBorder: string;
+  containerBg: string;
+  themeText: string;
+  tokenIcon: string;
+  tokenLabel: string;
+  buttonActive: string;
+  badgeStyle: string;
+}
+
+const TRIAL_SKINS: Record<string, TrialSkin> = {
+  "loc-gateway": {
+    containerBorder: "border-amber-600",
+    containerBg: "bg-gradient-to-b from-[#180C04] via-[#100702] to-[#0A0502]",
+    themeText: "text-amber-400",
+    tokenIcon: "✦",
+    tokenLabel: "STONE SEAL TRIAL",
+    buttonActive: "border-amber-400 bg-amber-950/70 text-amber-100",
+    badgeStyle: "bg-amber-950 text-amber-300 border-amber-500",
+  },
+  "loc-rotary-roots": {
+    containerBorder: "border-emerald-600",
+    containerBg: "bg-gradient-to-b from-[#041A0E] via-[#03130A] to-[#020D07]",
+    themeText: "text-emerald-400",
+    tokenIcon: "🌿",
+    tokenLabel: "LEAF TABLET TRIAL",
+    buttonActive: "border-emerald-400 bg-emerald-950/70 text-emerald-100",
+    badgeStyle: "bg-emerald-950 text-emerald-300 border-emerald-500",
+  },
+  "loc-rotaract-harbor": {
+    containerBorder: "border-cyan-600",
+    containerBg: "bg-gradient-to-b from-[#041624] via-[#03101A] to-[#020B12]",
+    themeText: "text-cyan-400",
+    tokenIcon: "⚓",
+    tokenLabel: "NAVIGATION TOKEN TRIAL",
+    buttonActive: "border-cyan-400 bg-cyan-950/70 text-cyan-100",
+    badgeStyle: "bg-cyan-950 text-cyan-300 border-cyan-500",
+  },
+  "loc-regent-keep": {
+    containerBorder: "border-orange-600",
+    containerBg: "bg-gradient-to-b from-[#1C0A04] via-[#140702] to-[#0D0502]",
+    themeText: "text-orange-400",
+    tokenIcon: "🔥",
+    tokenLabel: "COUNCIL CARD TRIAL",
+    buttonActive: "border-orange-400 bg-orange-950/70 text-orange-100",
+    badgeStyle: "bg-orange-950 text-orange-300 border-orange-500",
+  },
+  "loc-seven-realms": {
+    containerBorder: "border-indigo-600",
+    containerBg: "bg-gradient-to-b from-[#0E0824] via-[#090518] to-[#060312]",
+    themeText: "text-indigo-300",
+    tokenIcon: "✦",
+    tokenLabel: "CONSTELLATION NODE TRIAL",
+    buttonActive: "border-indigo-400 bg-indigo-950/70 text-indigo-100",
+    badgeStyle: "bg-indigo-950 text-indigo-300 border-indigo-500",
+  },
+  "loc-project-forge": {
+    containerBorder: "border-amber-500",
+    containerBg: "bg-gradient-to-b from-[#1C0D03] via-[#140902] to-[#0D0601]",
+    themeText: "text-amber-400",
+    tokenIcon: "⚒",
+    tokenLabel: "BLUEPRINT PIECE TRIAL",
+    buttonActive: "border-amber-400 bg-amber-950/70 text-amber-100",
+    badgeStyle: "bg-amber-950 text-amber-300 border-amber-500",
+  },
+  "loc-codewood": {
+    containerBorder: "border-teal-600",
+    containerBg: "bg-gradient-to-b from-[#041816] via-[#031110] to-[#020D0C]",
+    themeText: "text-teal-300",
+    tokenIcon: "ᚱ",
+    tokenLabel: "RUNE STONE TRIAL",
+    buttonActive: "border-teal-400 bg-teal-950/70 text-teal-100",
+    badgeStyle: "bg-teal-950 text-teal-300 border-teal-500",
+  },
+  "loc-grand-archive": {
+    containerBorder: "border-purple-600",
+    containerBg: "bg-gradient-to-b from-[#160822] via-[#0F0518] to-[#0A0310]",
+    themeText: "text-purple-300",
+    tokenIcon: "📜",
+    tokenLabel: "LEDGER / INDEX CARD TRIAL",
+    buttonActive: "border-purple-400 bg-purple-950/70 text-purple-100",
+    badgeStyle: "bg-purple-950 text-purple-300 border-purple-500",
+  },
+  "loc-impact-frontier": {
+    containerBorder: "border-emerald-600",
+    containerBg: "bg-gradient-to-b from-[#041A12] via-[#03120D] to-[#020F0A]",
+    themeText: "text-emerald-300",
+    tokenIcon: "📍",
+    tokenLabel: "MISSION PIN TRIAL",
+    buttonActive: "border-emerald-400 bg-emerald-950/70 text-emerald-100",
+    badgeStyle: "bg-emerald-950 text-emerald-300 border-emerald-500",
+  },
+  "loc-membership-citadel": {
+    containerBorder: "border-yellow-500",
+    containerBg: "bg-gradient-to-b from-[#201504] via-[#160E02] to-[#0E0902]",
+    themeText: "text-yellow-400",
+    tokenIcon: "✦",
+    tokenLabel: "CEREMONIAL REGENT SEAL TRIAL",
+    buttonActive: "border-yellow-400 bg-yellow-950/70 text-yellow-100",
+    badgeStyle: "bg-yellow-950 text-yellow-300 border-yellow-500",
+  },
+};
 
 export default function ChapterQuestReaderPage() {
   const params = useParams();
@@ -41,8 +148,17 @@ export default function ChapterQuestReaderPage() {
   const chapter: ChapterDetails | undefined = CHAPTERS_DATA[chapterId];
   const realmLocation = realmLocations.find((r) => r.id === chapterId);
 
-  // Lesson state
-  const [activeLessonId, setActiveLessonId] = useState<string>("");
+  // Determine initial lesson synchronously from searchParams if valid
+  const requestedLessonParam = searchParams?.get("lesson");
+  const validRequestedLesson = chapter?.lessons.find((l) => l.id === requestedLessonParam);
+  const fallbackFirstLesson =
+    chapter?.lessons.find((l) => !player.completedLessons?.includes(l.id)) ||
+    chapter?.lessons[0];
+
+  // Lesson state initialized immediately with requested or first appropriate lesson
+  const [activeLessonId, setActiveLessonId] = useState<string>(
+    validRequestedLesson?.id || fallbackFirstLesson?.id || ""
+  );
   const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
   const [isAnswerChecked, setIsAnswerChecked] = useState<boolean>(false);
   const [isCorrect, setIsCorrect] = useState<boolean>(false);
@@ -66,23 +182,14 @@ export default function ChapterQuestReaderPage() {
     xpAwarded: 0,
   });
 
-  // Determine initial lesson
+  // Keep activeLessonId synchronized if user navigates via browser back/forward or deep links
   useEffect(() => {
     if (!chapter) return;
-    const requestedLesson = searchParams?.get("lesson");
-    if (requestedLesson && chapter.lessons.some((l) => l.id === requestedLesson)) {
-      setActiveLessonId(requestedLesson);
-      return;
+    const requested = searchParams?.get("lesson");
+    if (requested && chapter.lessons.some((l) => l.id === requested)) {
+      setActiveLessonId(requested);
     }
-
-    // Default to first incomplete lesson or first lesson
-    const firstIncomplete = chapter.lessons.find((l) => !player.completedLessons?.includes(l.id));
-    if (firstIncomplete) {
-      setActiveLessonId(firstIncomplete.id);
-    } else {
-      setActiveLessonId(chapter.lessons[0]?.id || "");
-    }
-  }, [chapter, searchParams, player.completedLessons]);
+  }, [chapter, searchParams]);
 
   // Reset quiz state when switching lessons
   useEffect(() => {
@@ -90,6 +197,29 @@ export default function ChapterQuestReaderPage() {
     setIsAnswerChecked(false);
     setIsCorrect(false);
   }, [activeLessonId]);
+
+  // Cinematic States
+  const [showIntroCinematic, setShowIntroCinematic] = useState<boolean>(false);
+  const [showCompletionCinematic, setShowCompletionCinematic] = useState<boolean>(false);
+  const [completionCinematicData, setCompletionCinematicData] = useState<{
+    xpAwarded: number;
+    badgeTitle?: string;
+    nextChapterId?: string;
+    nextChapterTitle?: string;
+  }>({ xpAwarded: 0 });
+
+  // Auto-play Chapter Intro once per session when entering chapter
+  useEffect(() => {
+    if (!chapter) return;
+    const storageKey = `seen_intro_${chapter.id}`;
+    const seen = typeof window !== "undefined" ? sessionStorage.getItem(storageKey) : null;
+    if (!seen) {
+      setShowIntroCinematic(true);
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem(storageKey, "true");
+      }
+    }
+  }, [chapter]);
 
   if (!chapter) {
     return (
@@ -131,14 +261,15 @@ export default function ChapterQuestReaderPage() {
   const activeLesson: LessonData | undefined =
     chapter.lessons.find((l) => l.id === activeLessonId) || chapter.lessons[0];
 
+  const currentTrial = activeLesson?.knowledgeTrial || activeLesson?.knowledgeCheck;
   const currentLessonIndex = chapter.lessons.findIndex((l) => l.id === activeLesson?.id);
   const activeIsCompleted = isLessonCompleted(activeLesson?.id || "");
 
   // Check quiz option & trigger automatic guidance
   const handleCheckAnswer = () => {
-    if (!selectedOptionId || !activeLesson) return;
+    if (!selectedOptionId || !activeLesson || !currentTrial) return;
 
-    const correct = selectedOptionId === activeLesson.knowledgeCheck.correctOptionId;
+    const correct = selectedOptionId === currentTrial.correctOptionId;
     setIsAnswerChecked(true);
     setIsCorrect(correct);
 
@@ -160,19 +291,17 @@ export default function ChapterQuestReaderPage() {
       const res = completeLesson(activeLesson.id, chapter.id, activeLesson.xpReward);
       const isLastLesson = currentLessonIndex >= chapter.lessons.length - 1;
 
-      // Trigger automatic guidance modal
+      // Trigger automatic guidance modal & completion cinematic
       if (res.chapterCompleted || isLastLesson) {
         const currentIdxInRealms = realmLocations.findIndex((r) => r.id === chapter.id);
         const nextLoc = realmLocations[currentIdxInRealms + 1] || realmLocations[0];
-        setGuidanceConfig({
-          isOpen: true,
-          type: "chapter",
-          currentTitle: chapter.worldName,
-          nextTitle: nextLoc.worldName,
+        setCompletionCinematicData({
           xpAwarded: activeLesson.xpReward + chapter.xpReward,
-          badgeUnlockedTitle: res.badgeUnlocked?.title || chapter.badgeReward,
+          badgeTitle: res.badgeUnlocked?.title || chapter.badgeReward,
           nextChapterId: nextLoc.id,
+          nextChapterTitle: nextLoc.worldName,
         });
+        setShowCompletionCinematic(true);
       } else {
         const nextLesson = chapter.lessons[currentLessonIndex + 1];
         setGuidanceConfig({
@@ -260,8 +389,17 @@ export default function ChapterQuestReaderPage() {
               </span>
             </div>
 
-            <div className="px-2 py-0.5 bg-[#0A0503]/90 text-regent-gold font-pixel text-[10px] sm:text-xs border border-yellow-800 flex items-center gap-1 font-bold">
-              <Sparkles className="w-3 h-3 text-regent-gold" /> BADGE: {chapter.badgeReward}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowIntroCinematic(true)}
+                className="px-2 py-0.5 bg-[#0A0503]/90 text-regent-gold hover:text-white font-pixel text-[10px] sm:text-xs border border-yellow-800/80 hover:border-regent-gold flex items-center gap-1 font-bold transition-all shadow-sm"
+                title="Replay World Intro Cinematic"
+              >
+                <Sparkles className="w-3 h-3 text-regent-gold" /> INTRO
+              </button>
+              <div className="px-2 py-0.5 bg-[#0A0503]/90 text-regent-gold font-pixel text-[10px] sm:text-xs border border-yellow-800 flex items-center gap-1 font-bold">
+                <Sparkles className="w-3 h-3 text-regent-gold" /> BADGE: {chapter.badgeReward}
+              </div>
             </div>
           </div>
 
@@ -379,7 +517,7 @@ export default function ChapterQuestReaderPage() {
             chapterLabel={chapter.chapterLabel}
             worldName={chapter.worldName}
             chapterNumber={chapter.chapterNumber}
-            bgImage={realmLocation?.image}
+            guideNpcId={chapter.guideNpc || getNPCForChapter(chapter.id)?.id || "gatekeeper-aaron"}
             onProceedToKnowledgeCheck={() => {
               const el = document.getElementById("knowledge-check-section");
               if (el) el.scrollIntoView({ behavior: "smooth" });
@@ -492,125 +630,138 @@ export default function ChapterQuestReaderPage() {
       )}
 
       {/* 6. The Guardian's Riddle / Interactive Knowledge Check */}
-      <div
-        id="knowledge-check-section"
-        className="rounded-none border-4 border-regent-gold bg-[#0C0603] p-5 sm:p-7 shadow-[0_0_30px_rgba(255,199,25,0.15)] relative mb-8"
-      >
-        <div className="flex items-start gap-3 mb-4">
-          <div className="w-10 h-10 bg-[#170B05] border-2 border-regent-gold flex items-center justify-center shrink-0">
-            <HelpCircle className="w-6 h-6 text-regent-gold" />
-          </div>
-          <div>
-            <span className="text-[10px] font-pixel text-regent-gold uppercase tracking-widest block">
-              TRIAL OF THE STORY GUARDIAN
-            </span>
-            <h3 className="font-pixel text-sm sm:text-base font-bold text-white leading-snug">
-              {activeLesson.knowledgeCheck.question}
-            </h3>
-            <p className="text-[11px] font-serif text-[#C9B9A6] mt-0.5">
-              Select the correct truth to prove your mastery and advance to the next chronicle!
-            </p>
-          </div>
-        </div>
-
-        {/* Options Grid */}
-        <div className="space-y-2.5 mb-4">
-          {activeLesson.knowledgeCheck.options.map((option) => {
-            const isSelected = selectedOptionId === option.id;
-            const isTheCorrectOption = option.id === activeLesson.knowledgeCheck.correctOptionId;
-
-            let buttonStyle = "border-[#3D2612] bg-[#140803] text-white hover:border-regent-gold";
-            if (isAnswerChecked) {
-              if (isTheCorrectOption) {
-                buttonStyle = "border-regent-green bg-green-950/80 text-white font-bold";
-              } else if (isSelected && !isTheCorrectOption) {
-                buttonStyle = "border-red-600 bg-red-950/80 text-white line-through";
-              }
-            } else if (isSelected) {
-              buttonStyle = "border-regent-gold bg-[#2D1609] text-white font-bold shadow-md";
-            }
-
-            return (
-              <button
-                key={option.id}
-                onClick={() => {
-                  if (!isAnswerChecked || !isCorrect) {
-                    audioManager.playTap();
-                    setSelectedOptionId(option.id);
-                    setIsAnswerChecked(false);
-                  }
-                }}
-                className={`w-full p-3.5 border text-left font-serif text-xs sm:text-sm transition-all flex items-start justify-between gap-3 ${buttonStyle}`}
-              >
-                <span className="leading-relaxed">{option.text}</span>
-                {isAnswerChecked && isTheCorrectOption && (
-                  <CheckCircle2 className="w-4 h-4 text-regent-green shrink-0 mt-0.5" />
+      {/* 6. The Guardian's Riddle / Interactive Knowledge Trial */}
+      {currentTrial && (() => {
+        const skin = TRIAL_SKINS[chapter.id] || TRIAL_SKINS["loc-gateway"];
+        return (
+        <div
+          id="knowledge-check-section"
+          className={`rounded-none border-4 ${skin.containerBorder} ${skin.containerBg} p-5 sm:p-7 shadow-[0_0_30px_rgba(255,199,25,0.15)] relative mb-8 transition-colors duration-500`}
+        >
+          <div className="flex items-start gap-3 mb-4">
+            <div className={`w-10 h-10 bg-[#170B05] border-2 ${skin.containerBorder} flex items-center justify-center shrink-0`}>
+              <span className="text-xl select-none">{skin.tokenIcon}</span>
+            </div>
+            <div>
+              <div className="flex items-center gap-2 mb-0.5">
+                <span className={`text-[10px] font-pixel ${skin.themeText} uppercase tracking-widest block font-bold`}>
+                  {skin.tokenLabel}
+                </span>
+                {"type" in currentTrial && (
+                  <span className={`px-1.5 py-0.2 border text-[8px] font-pixel uppercase ${skin.badgeStyle}`}>
+                    {(currentTrial as any).type}
+                  </span>
                 )}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Feedback Display */}
-        {isAnswerChecked && (
-          <div
-            className={`p-3.5 border-2 mb-4 text-xs font-serif ${
-              isCorrect
-                ? "bg-green-950/70 border-regent-green text-green-100"
-                : "bg-red-950/70 border-red-800 text-red-100"
-            }`}
-          >
-            {isCorrect ? (
-              <div>
-                <p className="font-pixel text-xs font-bold text-regent-gold mb-1">
-                  ✦ TRIAL PASSED! +{activeLesson.xpReward} XP BOUNTY CLAIMED!
-                </p>
-                <p>{activeLesson.knowledgeCheck.successMessage}</p>
               </div>
-            ) : (
-              <div>
-                <p className="font-pixel text-xs font-bold text-red-300 mb-1">
-                  ✕ NOT QUITE! TRY AGAIN
-                </p>
-                <p>Hint from {companionKey.toUpperCase()}: {activeLesson.knowledgeCheck.hint}</p>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Action Row */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-3 border-t border-[#3D2612]">
-          <div className="text-[10px] font-pixel text-[#A48871] flex items-center gap-1">
-            <Sparkles className="w-3.5 h-3.5 text-regent-gold" />
-            <span>Reward: +{activeLesson.xpReward} XP Bounty</span>
+              <h3 className="font-pixel text-sm sm:text-base font-bold text-white leading-snug">
+                {currentTrial.question}
+              </h3>
+              <p className="text-[11px] font-serif text-[#C9B9A6] mt-0.5">
+                Select the correct truth to prove your mastery and advance to the next chronicle!
+              </p>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            {!isAnswerChecked || !isCorrect ? (
-              <RetroButton
-                variant="yellow"
-                size="sm"
-                disabled={!selectedOptionId}
-                onClick={handleCheckAnswer}
-              >
-                SUBMIT ANSWER
-              </RetroButton>
-            ) : (
-              <RetroButton
-                variant="green"
-                size="sm"
-                onClick={handleNextLessonManual}
-                icon={<ArrowRight className="w-3.5 h-3.5" />}
-                iconPosition="right"
-              >
-                {currentLessonIndex < chapter.lessons.length - 1
-                  ? "NEXT CHRONICLE →"
-                  : "FINISH REALM QUEST →"}
-              </RetroButton>
-            )}
+          {/* Options Grid */}
+          <div className="space-y-2.5 mb-4">
+            {currentTrial.options.map((option) => {
+              const isSelected = selectedOptionId === option.id;
+              const isTheCorrectOption = option.id === currentTrial.correctOptionId;
+
+              let buttonStyle = "border-[#3D2612] bg-[#140803]/80 text-white hover:border-regent-gold";
+              if (isAnswerChecked) {
+                if (isTheCorrectOption) {
+                  buttonStyle = "border-regent-green bg-green-950/80 text-white font-bold";
+                } else if (isSelected && !isTheCorrectOption) {
+                  buttonStyle = "border-red-600 bg-red-950/80 text-white line-through";
+                }
+              } else if (isSelected) {
+                buttonStyle = `${skin.buttonActive} font-bold shadow-md`;
+              }
+
+              return (
+                <button
+                  key={option.id}
+                  onClick={() => {
+                    if (!isAnswerChecked || !isCorrect) {
+                      audioManager.playTap();
+                      setSelectedOptionId(option.id);
+                      setIsAnswerChecked(false);
+                    }
+                  }}
+                  className={`w-full p-3.5 border text-left font-serif text-xs sm:text-sm transition-all flex items-start justify-between gap-3 ${buttonStyle}`}
+                >
+                  <span className="leading-relaxed">{option.text}</span>
+                  {isAnswerChecked && isTheCorrectOption && (
+                    <CheckCircle2 className="w-4 h-4 text-regent-green shrink-0 mt-0.5" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Feedback Display */}
+          {isAnswerChecked && (
+            <div
+              className={`p-3.5 border-2 mb-4 text-xs font-serif ${
+                isCorrect
+                  ? "bg-green-950/70 border-regent-green text-green-100"
+                  : "bg-red-950/70 border-red-800 text-red-100"
+              }`}
+            >
+              {isCorrect ? (
+                <div>
+                  <p className="font-pixel text-xs font-bold text-regent-gold mb-1">
+                    ✦ TRIAL PASSED! +{activeLesson.xpReward} XP BOUNTY CLAIMED!
+                  </p>
+                  <p>{currentTrial.successMessage}</p>
+                </div>
+              ) : (
+                <div>
+                  <p className="font-pixel text-xs font-bold text-red-300 mb-1">
+                    ✕ NOT QUITE! TRY AGAIN
+                  </p>
+                  <p>Hint from {companionKey.toUpperCase()}: {currentTrial.hint}</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Action Row */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-3 border-t border-[#3D2612]">
+            <div className="text-[10px] font-pixel text-[#A48871] flex items-center gap-1">
+              <Sparkles className="w-3.5 h-3.5 text-regent-gold" />
+              <span>Reward: +{activeLesson.xpReward} XP Bounty</span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {!isAnswerChecked || !isCorrect ? (
+                <RetroButton
+                  variant="yellow"
+                  size="sm"
+                  disabled={!selectedOptionId}
+                  onClick={handleCheckAnswer}
+                >
+                  SUBMIT ANSWER
+                </RetroButton>
+              ) : (
+                <RetroButton
+                  variant="green"
+                  size="sm"
+                  onClick={handleNextLessonManual}
+                  icon={<ArrowRight className="w-3.5 h-3.5" />}
+                  iconPosition="right"
+                >
+                  {currentLessonIndex < chapter.lessons.length - 1
+                    ? "NEXT CHRONICLE →"
+                    : "FINISH REALM QUEST →"}
+                </RetroButton>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+        );
+      })()}
 
       {/* 7. Bottom Navigation Controls */}
       <div className="flex items-center justify-between pt-4 border-t border-[#3D2612]">
@@ -660,6 +811,42 @@ export default function ChapterQuestReaderPage() {
         nextChapterId={guidanceConfig.nextChapterId}
         onAdvance={handleAdvanceGuidance}
         onClose={() => setGuidanceConfig((prev) => ({ ...prev, isOpen: false }))}
+      />
+
+      {/* 9. CHAPTER INTRO CINEMATIC */}
+      <ChapterIntroCinematic
+        chapterId={chapter.id}
+        chapterNumber={chapter.chapterNumber}
+        chapterLabel={chapter.chapterLabel}
+        chapterTitle={chapter.chapterTitle}
+        worldName={chapter.worldName}
+        seethawakaInspiration={chapter.seethawakaInspiration}
+        guideNpcId={chapter.guideNpc || getNPCForChapter(chapter.id)?.id || "gatekeeper-aaron"}
+        companionId={companionKey}
+        isOpen={showIntroCinematic}
+        onComplete={() => setShowIntroCinematic(false)}
+      />
+
+      {/* 10. CHAPTER COMPLETION CINEMATIC */}
+      <ChapterCompletionCinematic
+        chapterId={chapter.id}
+        chapterTitle={chapter.chapterTitle}
+        worldName={chapter.worldName}
+        nextChapterId={completionCinematicData.nextChapterId}
+        nextChapterTitle={completionCinematicData.nextChapterTitle}
+        badgeUnlockedTitle={completionCinematicData.badgeTitle}
+        xpAwarded={completionCinematicData.xpAwarded}
+        companionId={companionKey}
+        isOpen={showCompletionCinematic}
+        onAdvance={() => {
+          setShowCompletionCinematic(false);
+          if (completionCinematicData.nextChapterId) {
+            router.push(`/journey/${completionCinematicData.nextChapterId}`);
+          } else {
+            router.push("/journey");
+          }
+        }}
+        onClose={() => setShowCompletionCinematic(false)}
       />
     </div>
   );

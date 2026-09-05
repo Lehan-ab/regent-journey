@@ -21,9 +21,88 @@ import RetroCard from "@/components/ui/RetroCard";
 import RetroButton from "@/components/ui/RetroButton";
 import PixelProgressBar from "@/components/ui/PixelProgressBar";
 import WorldDivider from "@/components/ui/WorldDivider";
-import { sevenAvenueRealms, realmLocations, RealmLocation } from "@/data/realmMapLocations";
+import { sevenAvenueRealms, elevenAvenueRealms, realmLocations, RealmLocation } from "@/data/realmMapLocations";
 import { usePlayer } from "@/context/PlayerContext";
 import { CHAPTERS_DATA } from "@/data/chaptersData";
+
+const CHAPTER_HERALDRY: Record<string, {
+  silhouetteName: string;
+  badgeSymbol: string;
+  themeColor: string;
+  accentBorder: string;
+  tagline: string;
+}> = {
+  "loc-gateway": {
+    silhouetteName: "THRESHOLD PORTAL",
+    badgeSymbol: "⛩",
+    themeColor: "from-amber-950/60 to-[#0A0503]",
+    accentBorder: "border-amber-600/70",
+    tagline: "The Ancient Valley Gateway",
+  },
+  "loc-rotary-roots": {
+    silhouetteName: "BOTANICAL CREST",
+    badgeSymbol: "🌿",
+    themeColor: "from-emerald-950/60 to-[#0A0503]",
+    accentBorder: "border-emerald-600/70",
+    tagline: "Living Banyan Canopy",
+  },
+  "loc-rotaract-network": {
+    silhouetteName: "NAVIGATION ARTIFACT",
+    badgeSymbol: "⚓",
+    themeColor: "from-cyan-950/60 to-[#0A0503]",
+    accentBorder: "border-cyan-600/70",
+    tagline: "Harbor Navigation Astrolabe",
+  },
+  "loc-club-hearth": {
+    silhouetteName: "FORTRESS CREST",
+    badgeSymbol: "🏰",
+    themeColor: "from-orange-950/60 to-[#0A0503]",
+    accentBorder: "border-orange-600/70",
+    tagline: "Seethawaka Citadel Hearth",
+  },
+  "loc-avenue-compass": {
+    silhouetteName: "ELEVEN-POINT COMPASS",
+    badgeSymbol: "🧭",
+    themeColor: "from-indigo-950/60 to-[#0A0503]",
+    accentBorder: "border-indigo-500/70",
+    tagline: "11 Celestial Avenue Constellation",
+  },
+  "loc-project-forge": {
+    silhouetteName: "HAMMER & BLUEPRINT",
+    badgeSymbol: "⚒",
+    themeColor: "from-amber-900/60 to-[#0A0503]",
+    accentBorder: "border-amber-500/70",
+    tagline: "Crucible of Community Impact",
+  },
+  "loc-pr-codewood": {
+    silhouetteName: "RUNE TABLET",
+    badgeSymbol: "📜",
+    themeColor: "from-purple-950/60 to-[#0A0503]",
+    accentBorder: "border-purple-600/70",
+    tagline: "Whispering V•O•I•C•E Grove",
+  },
+  "loc-grand-archive": {
+    silhouetteName: "CODEX & BRASS KEY",
+    badgeSymbol: "🗝",
+    themeColor: "from-teal-950/60 to-[#0A0503]",
+    accentBorder: "border-teal-600/70",
+    tagline: "Vault of Stewardship & RMIS",
+  },
+  "loc-impact-frontier": {
+    silhouetteName: "EXPEDITION MAP",
+    badgeSymbol: "🗺",
+    themeColor: "from-emerald-900/60 to-[#0A0503]",
+    accentBorder: "border-emerald-500/70",
+    tagline: "Field Action & 2+2 Verification",
+  },
+  "loc-membership-citadel": {
+    silhouetteName: "CEREMONIAL SUMMIT SEAL",
+    badgeSymbol: "✦",
+    themeColor: "from-yellow-950/60 to-[#0A0503]",
+    accentBorder: "border-yellow-500/70",
+    tagline: "High Council of Induction",
+  },
+};
 
 interface LessonNode {
   id?: string;
@@ -37,62 +116,31 @@ interface ChapterData extends RealmLocation {
 }
 
 export default function JourneyPage() {
-  const { player, isHydrated, isChapterUnlocked, isLessonCompleted } = usePlayer();
+  const { player, isHydrated, isChapterUnlocked, isLessonCompleted, getChapterProgress, getChapterCTA } = usePlayer();
   const [activeNpcDialogue, setActiveNpcDialogue] = useState<{
     name: string;
     quote: string;
   } | null>(null);
 
-  // Fallback lesson definitions for chapters 5-9 if not in CHAPTERS_DATA yet
-  const fallbackLessons: Record<string, { id: string; title: string }[]> = {
-    "loc-project-forge": [
-      { id: "lesson-5-1", title: "Drafting the Project Blueprint" },
-      { id: "lesson-5-2", title: "Resource Mobilization & Sponsorship" },
-      { id: "lesson-5-3", title: "PR, Media & Event Logistics" },
-    ],
-    "loc-codewood": [
-      { id: "lesson-6-1", title: "Meeting Protocols & Standing Orders" },
-      { id: "lesson-6-2", title: "Leadership Ethics & The Four-Way Test" },
-      { id: "lesson-6-3", title: "Constitutional Bylaws & Voting" },
-    ],
-    "loc-grand-archive": [
-      { id: "lesson-7-1", title: "ROTA 101: The Official Handbook" },
-      { id: "lesson-7-2", title: "District Citations & Awards Criteria" },
-      { id: "lesson-7-3", title: "Club Administration Archive" },
-    ],
-    "loc-impact-frontier": [
-      { id: "lesson-8-1", title: "Attending Your First Club Assembly" },
-      { id: "lesson-8-2", title: "Joining an On-Ground Community Camp" },
-      { id: "lesson-8-3", title: "Prospect Action Directives" },
-    ],
-    "loc-membership-citadel": [
-      { id: "lesson-9-1", title: "The Regent Member Oath" },
-      { id: "lesson-9-2", title: "Official Pinning & Induction Ceremony" },
-    ],
-  };
-
-  // Build dynamic chapters list
+  // Build dynamic chapters list derived purely from canonical CHAPTERS_DATA and player state
   const canonicalChapters: ChapterData[] = realmLocations.map((loc) => {
     const chapterDetails = CHAPTERS_DATA[loc.id];
-    const isCompleted = isHydrated ? player.completedWorlds?.includes(loc.id) : loc.status === "COMPLETED";
-    const isUnlocked = isHydrated ? isChapterUnlocked(loc.id) : (loc.status === "COMPLETED" || loc.status === "CURRENT");
-    const status: "COMPLETED" | "CURRENT" | "LOCKED" = isCompleted
+    const { completedCount, totalCount, isCompleted, isUnlocked } = getChapterProgress(loc.id);
+
+    const status: "COMPLETED" | "CURRENT" | "LOCKED" = !isHydrated
+      ? (loc.status === "COMPLETED" ? "COMPLETED" : loc.status === "CURRENT" ? "CURRENT" : "LOCKED")
+      : isCompleted
       ? "COMPLETED"
       : isUnlocked
       ? "CURRENT"
       : "LOCKED";
 
-    let rawLessons: { id: string; title: string }[] = [];
-    if (chapterDetails) {
-      rawLessons = chapterDetails.lessons.map((l) => ({ id: l.id, title: l.title }));
-    } else if (fallbackLessons[loc.id]) {
-      rawLessons = fallbackLessons[loc.id];
-    } else {
-      rawLessons = [
-        { id: `${loc.id}-1`, title: "Chapter Overview" },
-        { id: `${loc.id}-2`, title: "Core Principles" },
-      ];
-    }
+    const rawLessons: { id: string; title: string }[] = chapterDetails
+      ? chapterDetails.lessons.map((l) => ({ id: l.id, title: l.title }))
+      : [
+          { id: `${loc.id}-1`, title: "Chapter Overview" },
+          { id: `${loc.id}-2`, title: "Core Principles" },
+        ];
 
     let foundFirstIncomplete = false;
     const lessons: LessonNode[] = rawLessons.map((l) => {
@@ -110,14 +158,11 @@ export default function JourneyPage() {
       };
     });
 
-    const lessonsCompleted = lessons.filter((l) => l.completed).length;
-    const lessonsTotal = lessons.length;
-
     return {
       ...loc,
       status,
-      lessonsTotal,
-      lessonsCompleted,
+      lessonsTotal: totalCount > 0 ? totalCount : rawLessons.length,
+      lessonsCompleted: completedCount,
       lessons,
     };
   });
@@ -179,37 +224,53 @@ export default function JourneyPage() {
                 label={chapter.isPrologue ? "THE GATEWAY" : `ROUTE TO ${chapter.chapterLabel}`}
                 icon="path"
               />
-            )}
-
-            <RetroCard
-              className={`overflow-hidden ${
+            )}            <RetroCard
+              className={`overflow-hidden transition-all duration-300 ${
                 chapter.status === "LOCKED"
-                  ? "opacity-85 border-border-card"
+                  ? "opacity-85 border-border-card bg-[#050B1B]"
                   : chapter.status === "COMPLETED"
                   ? "border-green-800/80 shadow-retro-card"
-                  : "border-regent-blue shadow-retro-card-lg"
+                  : "border-regent-gold shadow-retro-card-lg"
               }`}
             >
-              {/* Illustrated Header Banner */}
+              {/* Illustrated Header Banner with Unique Heraldic Silhouette */}
               <div className="relative w-full h-36 sm:h-44 md:h-48 overflow-hidden">
                 <Image
                   src={chapter.image}
                   alt={chapter.worldName}
                   fill
-                  className="object-cover"
+                  className={`object-cover ${chapter.status === "LOCKED" ? "filter grayscale contrast-125" : ""}`}
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#071331] via-[#071331]/60 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#071331] via-[#071331]/70 to-transparent" />
 
-                {/* Top Badges */}
-                <div className="absolute top-3 left-3 right-3 flex items-center justify-between gap-2 z-10 flex-wrap">
-                  <div className="flex items-center gap-2">
-                    <span className="px-2.5 py-0.5 bg-regent-maroon text-white font-pixel text-[10px] sm:text-xs font-bold uppercase border border-red-950">
-                      {chapter.chapterLabel}
+                {/* Unique Heraldic Silhouette Badge (Visible on ALL chapters including LOCKED) */}
+                <div className="absolute top-3 left-3 flex items-center gap-2 z-10">
+                  <span className="px-2.5 py-0.5 bg-regent-maroon text-white font-pixel text-[10px] sm:text-xs font-bold uppercase border border-red-950 shadow-md">
+                    {chapter.chapterLabel}
+                  </span>
+                  {CHAPTER_HERALDRY[chapter.id] && (
+                    <span className="px-2.5 py-0.5 bg-[#02091F]/90 text-yellow-300 font-pixel text-[10px] sm:text-xs border border-regent-gold/70 flex items-center gap-1.5 shadow-md">
+                      <span>{CHAPTER_HERALDRY[chapter.id].badgeSymbol}</span>
+                      <span className="tracking-wider">{CHAPTER_HERALDRY[chapter.id].silhouetteName}</span>
                     </span>
-                    <span className="px-2 py-0.5 bg-[#02091F]/90 text-text-secondary font-pixel text-[10px] sm:text-xs border border-border-card flex items-center gap-1">
-                      <MapPin className="w-3 h-3 text-regent-blue" /> {chapter.worldName}
+                  )}
+                </div>
+
+                {/* Top Right XP & Status Badge */}
+                <div className="absolute top-3 right-3 flex items-center gap-2 z-10">
+                  {chapter.status === "LOCKED" ? (
+                    <span className="px-2.5 py-0.5 bg-red-950/90 text-red-300 font-pixel text-[10px] sm:text-xs border border-red-800 flex items-center gap-1 shadow-md">
+                      <Lock className="w-3 h-3" /> LOCKED
                     </span>
-                  </div>
+                  ) : chapter.status === "COMPLETED" ? (
+                    <span className="px-2.5 py-0.5 bg-green-950/90 text-regent-green font-pixel text-[10px] sm:text-xs border border-green-700 flex items-center gap-1 shadow-md">
+                      <CheckCircle2 className="w-3 h-3" /> QUEST COMPLETE
+                    </span>
+                  ) : (
+                    <span className="px-2.5 py-0.5 bg-amber-950/90 text-yellow-300 font-pixel text-[10px] sm:text-xs border border-amber-600 flex items-center gap-1 shadow-md animate-pulse">
+                      <Sparkles className="w-3 h-3" /> ACTIVE QUEST
+                    </span>
+                  )}
 
                   <span className="px-2 py-0.5 bg-[#02091F]/90 text-regent-gold font-pixel text-[10px] sm:text-xs border border-yellow-900/60 flex items-center gap-1 font-bold">
                     <Sparkles className="w-3 h-3" /> +{chapter.xpReward} XP
@@ -217,10 +278,15 @@ export default function JourneyPage() {
                 </div>
 
                 {/* Title & World Info */}
-                <div className="absolute bottom-3 left-3 right-3 z-10">
-                  <h2 className="font-pixel text-lg sm:text-xl md:text-2xl font-bold text-white tracking-wide drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
-                    {chapter.chapterTitle}
-                  </h2>
+                <div className="absolute bottom-3 left-3 right-3 z-10 flex items-end justify-between">
+                  <div>
+                    <span className="text-[10px] font-pixel text-cyan-300 uppercase tracking-wider block">
+                      {chapter.worldName}
+                    </span>
+                    <h2 className="font-pixel text-lg sm:text-xl md:text-2xl font-bold text-white tracking-wide drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
+                      {chapter.chapterTitle}
+                    </h2>
+                  </div>
                 </div>
               </div>
 
@@ -239,33 +305,35 @@ export default function JourneyPage() {
                   {chapter.description}
                 </p>
 
-                {/* The Seven Realms: 2-Column Responsive Tile Grid */}
-                {chapter.id === "loc-seven-realms" && (
+                {/* Chapter 4: The 11 Distinct Avenues Grid (4 Primary + 7 Secondary) */}
+                {(chapter.id === "loc-avenue-compass" || chapter.id === "loc-seven-realms") && (
                   <div className="mb-4 p-3 bg-[#03091B] border border-border-card">
-                    <div className="flex items-center gap-1.5 mb-2 text-xs font-pixel text-regent-gold uppercase tracking-wider">
-                      <Layers className="w-3.5 h-3.5" />
-                      <span>The 7 Themed Avenue Realms:</span>
+                    <div className="flex items-center justify-between gap-2 mb-2 text-xs font-pixel text-regent-gold uppercase tracking-wider flex-wrap">
+                      <div className="flex items-center gap-1.5">
+                        <Layers className="w-3.5 h-3.5" />
+                        <span>The 11 Distinct Avenue Realms:</span>
+                      </div>
+                      <span className="text-[9px] text-cyan-300 lowercase font-serif italic">
+                        4 primary • 7 secondary identities
+                      </span>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {sevenAvenueRealms.map((realm) => (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                      {elevenAvenueRealms.map((realm) => (
                         <div
                           key={realm.id}
-                          className={`p-2 ${realm.bgColor} border ${realm.borderColor} flex items-start justify-between gap-2`}
+                          className={`p-2 ${realm.bgColor} border ${realm.borderColor} flex items-start justify-between gap-1.5`}
                         >
                           <div className="min-w-0">
                             <span className="font-pixel text-xs text-white font-bold block truncate">
-                              {realm.realmTitle}
-                            </span>
-                            <span className="text-[10px] text-text-muted block truncate">
                               {realm.name}
                             </span>
                             <p className="text-[10px] text-text-secondary line-clamp-1 mt-0.5">
                               {realm.tagline}
                             </p>
                           </div>
-                          <span className={`text-[9px] font-pixel px-1.5 py-0.2 border border-border-card/40 ${realm.color} shrink-0`}>
-                            AVENUE
+                          <span className={`text-[8px] font-pixel px-1 py-0.2 border border-border-card/40 ${realm.color} shrink-0 uppercase font-bold`}>
+                            {realm.category === "PRIMARY" ? "PRIMARY" : "SEC"}
                           </span>
                         </div>
                       ))}
@@ -390,29 +458,27 @@ export default function JourneyPage() {
                     </span>
                   </div>
 
-                  {chapter.status === "CURRENT" ? (
-                    <RetroButton
-                      variant="blue"
-                      size="sm"
-                      href={`/journey/${chapter.id}`}
-                      icon={<ArrowRight className="w-3.5 h-3.5" />}
-                      iconPosition="right"
-                    >
-                      ENTER REALM QUEST
-                    </RetroButton>
-                  ) : chapter.status === "COMPLETED" ? (
-                    <RetroButton
-                      variant="outline"
-                      size="sm"
-                      href={`/journey/${chapter.id}`}
-                    >
-                      REVISIT COMPLETED CHAPTER
-                    </RetroButton>
-                  ) : (
-                    <RetroButton variant="outline" size="sm" disabled>
-                      {chapter.unlockRequirement || "LOCKED • COMPLETE PREVIOUS CHAPTER"}
-                    </RetroButton>
-                  )}
+                  {(() => {
+                    const cta = getChapterCTA(chapter.id);
+                    if (cta.isLocked) {
+                      return (
+                        <RetroButton variant="outline" size="sm" disabled>
+                          {chapter.unlockRequirement || "LOCKED • COMPLETE PREVIOUS CHAPTER"}
+                        </RetroButton>
+                      );
+                    }
+                    return (
+                      <RetroButton
+                        variant={cta.variant === "outline" ? "outline" : "blue"}
+                        size="sm"
+                        href={cta.href}
+                        icon={cta.variant === "blue" ? <ArrowRight className="w-3.5 h-3.5" /> : undefined}
+                        iconPosition="right"
+                      >
+                        {cta.text}
+                      </RetroButton>
+                    );
+                  })()}
                 </div>
               </div>
             </RetroCard>

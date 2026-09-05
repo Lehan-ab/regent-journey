@@ -45,6 +45,11 @@ export default function PixelProgressBar({
         </div>
       )}
       <div
+        role="progressbar"
+        aria-valuenow={clampedProgress}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-label={label || "Progress"}
         className={cn(
           "w-full bg-[#03091A] border-2 border-border-card p-0.5 overflow-hidden relative",
           heightStyles[size]

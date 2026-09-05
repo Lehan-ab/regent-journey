@@ -6,9 +6,17 @@ import Link from "next/link";
 import { ArrowRight, BookOpen, Sparkles, Trees, Shield } from "lucide-react";
 import RetroButton from "@/components/ui/RetroButton";
 import PixelProgressBar from "@/components/ui/PixelProgressBar";
-import { mockUser } from "@/data/mockUserData";
+import { usePlayer } from "@/context/PlayerContext";
 
 export default function FeaturedJourneyCard() {
+  const { player, journeyProgress, nextRecommendedAction } = usePlayer();
+
+  const currentWorldName = nextRecommendedAction.worldName || player.currentWorld || "The Gateway";
+  const currentChapterLabel = nextRecommendedAction.chapterLabel || player.currentChapterLabel || "PROLOGUE";
+  const nextLessonName = nextRecommendedAction.title || "Welcome to the Realm of Regent";
+  const xpReward = nextRecommendedAction.xpReward || 25;
+  const targetHref = nextRecommendedAction.href || "/journey";
+
   return (
     <section className="w-full mb-8">
       {/* Section Heading */}
@@ -18,7 +26,7 @@ export default function FeaturedJourneyCard() {
           JUMP BACK IN
         </h2>
         <span className="text-xs text-text-muted font-pixel hidden sm:inline-block">
-          CHAPTER 1 • CURRENT QUEST
+          {currentChapterLabel} • CURRENT QUEST
         </span>
       </div>
 
@@ -43,12 +51,12 @@ export default function FeaturedJourneyCard() {
             <div className="bg-[#02091F]/90 border border-border-card p-3 backdrop-blur-sm shadow-md">
               <div className="flex items-center justify-between gap-2 mb-1.5 font-pixel text-xs">
                 <span className="text-regent-gold flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5" /> ROTARY ROOTS PROGRESS
+                  <Sparkles className="w-3.5 h-3.5" /> OVERALL JOURNEY PROGRESS
                 </span>
-                <span className="text-white font-bold">{mockUser.journeyProgress}%</span>
+                <span className="text-white font-bold">{journeyProgress}%</span>
               </div>
               <PixelProgressBar
-                progress={mockUser.journeyProgress}
+                progress={journeyProgress}
                 color="green"
                 showLabel={false}
                 size="sm"
@@ -61,16 +69,16 @@ export default function FeaturedJourneyCard() {
             {/* Journey Pill & XP Bounty */}
             <div className="flex items-center gap-2 mb-1.5 flex-wrap">
               <span className="px-2.5 py-0.5 bg-regent-maroon text-white font-pixel text-[10px] sm:text-xs font-bold uppercase tracking-wider border border-red-950 shadow-sm">
-                CHAPTER 1
+                {currentChapterLabel}
               </span>
               <span className="px-2 py-0.5 bg-[#02091F]/90 text-regent-gold font-pixel text-[10px] sm:text-xs border border-yellow-900/50 flex items-center gap-1">
-                <Sparkles className="w-3 h-3" /> +150 XP Reward
+                <Sparkles className="w-3 h-3" /> +{xpReward} XP Reward
               </span>
             </div>
 
             {/* Large Title */}
             <h3 className="font-pixel text-2xl sm:text-3xl md:text-4xl font-bold text-white tracking-wide drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
-              {mockUser.currentJourney.toUpperCase()}
+              {currentWorldName.toUpperCase()}
             </h3>
 
             {/* Next Lesson Info */}
@@ -79,7 +87,7 @@ export default function FeaturedJourneyCard() {
               <span>
                 Next quest:{" "}
                 <strong className="text-white font-semibold">
-                  {mockUser.nextLesson}
+                  {nextLessonName}
                 </strong>
               </span>
             </div>
@@ -89,7 +97,7 @@ export default function FeaturedJourneyCard() {
               <RetroButton
                 variant="blue"
                 size="lg"
-                href="/journey"
+                href={targetHref}
                 icon={<ArrowRight className="w-5 h-5" />}
                 iconPosition="right"
                 className="flex-1 sm:flex-initial"
@@ -99,9 +107,9 @@ export default function FeaturedJourneyCard() {
 
               <Link
                 href="/journey"
-                className="inline-flex items-center justify-center font-pixel text-xs text-text-secondary hover:text-white px-3 py-2 border border-transparent hover:border-border-card transition-colors uppercase tracking-wider"
+                className="font-pixel text-xs text-regent-gold hover:underline flex items-center justify-center gap-1 py-2 px-3"
               >
-                VIEW FULL JOURNEY
+                VIEW FULL ADVENTURE PATH
               </Link>
             </div>
           </div>

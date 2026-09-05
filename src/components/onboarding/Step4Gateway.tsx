@@ -6,20 +6,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Sparkles,
   ArrowRight,
-  MessageSquare,
-  Award,
-  Star,
-  Compass,
-  CheckCircle2,
-  Lock,
-  DoorOpen,
   Scroll,
-  Shield,
+  DoorOpen,
   ChevronRight,
-  Landmark,
+  BookOpen,
 } from "lucide-react";
 import PixelAvatar from "@/components/avatar/PixelAvatar";
 import PixelCompanion from "@/components/companion/PixelCompanion";
+import NPCPortrait from "@/components/story/NPCPortrait";
 import RetroButton from "@/components/ui/RetroButton";
 import { COMPANIONS } from "@/data/companionsData";
 import { AvatarConfig, CompanionId, CompanionEmotion, ExplorerId } from "@/types/player";
@@ -35,10 +29,9 @@ interface Step4GatewayProps {
 interface StoryGateBeat {
   speaker: "aaron" | "companion" | "prospect";
   speakerTitle?: string;
+  expression?: "neutral" | "speaking" | "reaction";
   emotion?: CompanionEmotion;
   text: string;
-  prospectChoices?: string[];
-  roadmapHighlight?: string;
 }
 
 export default function Step4Gateway({
@@ -51,74 +44,35 @@ export default function Step4Gateway({
   const companion = COMPANIONS[companionId] || COMPANIONS.nova;
   const prospectName = name?.trim() || "TRAVELLER";
 
-  // Story beats at the gate
+  // Scripted introduction sequence (concise intro without duplicating lesson 0-1)
   const gateBeats: StoryGateBeat[] = [
     {
       speaker: "aaron",
       speakerTitle: "Gatekeeper Aaron • Portal Guardian",
-      text: `“Halt, aspiring traveler! Before you stand the ancient stone gates of Seethawaka. You carry purpose in your stride, ${prospectName}. Beyond these archways lies a realm unlike any other.”`,
+      expression: "speaking",
+      text: `“Halt, aspiring traveler! Before you stand the ancient stone gates of Seethawaka. You carry purpose in your stride, ${prospectName}. Beyond these archways lies the realm of the Rotaract Club of Seethawaka Regent—a self-sponsored club dedicated to service, leadership, and fellowship.”`,
     },
     {
       speaker: "prospect",
-      text: `“I have heard the call of Seethawaka Regent! Who are you, and what realm lies beyond this threshold?”`,
+      text: `“I have heard the call of Seethawaka Regent! What path awaits beyond this threshold?”`,
+    },
+    {
+      speaker: "aaron",
+      speakerTitle: "Gatekeeper Aaron • Portal Guardian",
+      expression: "speaking",
+      text: `“A path founded on shared purpose, responsibility, and the timeless Rotary ethos of Service Above Self. Ahead lie the chronicles of our origins, the 11 avenues of action, and the forge where real community impact takes shape.”`,
     },
     {
       speaker: "companion",
       speakerTitle: `${companion.name} • Your Guide`,
       emotion: "happy",
-      text: `“You stand before the portal to the Rotaract Club of Seethawaka Regent (RACSR)! But remember our most important identity: we are an independent, SELF-SPONSORED Rotaract club chartered under Rotary International District 3220.”`,
-    },
-    {
-      speaker: "aaron",
-      speakerTitle: "Gatekeeper Aaron • Portal Guardian",
-      text: `“Aye! We are not sponsored by any Rotary club! Under the 2019 elevation of Rotaract, our youth leaders forged their own charter. We take 100% ownership of our projects, finances, and governance—a true self-governed powerhouse!”`,
-    },
-    {
-      speaker: "prospect",
-      text: `“A self-sponsored club run entirely by passionate youth! So what is our quest across this journey?”`,
-      prospectChoices: [
-        "Explain our roadmap across the realms!",
-        "What must I do to earn official membership?",
-      ],
-    },
-    {
-      speaker: "companion",
-      speakerTitle: `${companion.name} • Your Guide`,
-      emotion: "thinking",
-      roadmapHighlight: "The Grand 9-Part Expedition",
-      text: `“Listen well to our roadmap! First, we enter ‘Rotary Roots’ to discover how Rotary began in Chicago in 1905 and master the Four-Way Test. Next, we sail to ‘Rotaract Harbor’ to connect with District 3220 across Sri Lanka and the Maldives!”`,
-    },
-    {
-      speaker: "companion",
-      speakerTitle: `${companion.name} • Your Guide`,
-      emotion: "proud",
-      roadmapHighlight: "Regent Keep & The Seven Realms",
-      text: `“Then, we climb to ‘Regent Keep’ to meet our 2026-27 Board of Officials, celebrate our self-sponsored charter, and embrace our Maroon & Gold creed! After that, you will conquer the Seven Realms of Service—from Community Heartland to the Treasury Vault!”`,
-    },
-    {
-      speaker: "aaron",
-      speakerTitle: "Gatekeeper Aaron • Portal Guardian",
-      roadmapHighlight: "The Induction Pinnacle",
-      text: `“And at the journey's end stands the Induction Pinnacle. Once you master the chronicles, attend assemblies, and serve hands-on, you will take the Regent Oath and receive your official bronze club pin!”`,
-    },
-    {
-      speaker: "prospect",
-      text: `“I understand my purpose. I am ready to begin this epic adventure with ${companion.name}! Open the Gateway to Seethawaka!”`,
-      prospectChoices: [
-        "Let the journey begin! Unseal the gates!",
-        "I am ready to forge my legacy as a Regent!",
-      ],
-    },
-    {
-      speaker: "aaron",
-      speakerTitle: "Gatekeeper Aaron • Portal Guardian",
-      text: `“By the timeless creed of Purpose and Impact, I turn the ancient iron gears! Step through, Explorer, and let your legend begin!”`,
+      expression: "reaction",
+      text: `“The gate is ready, ${prospectName}! What lies beyond it must be discovered by walking the path yourself. Let us unseal the threshold and enter the Prologue!”`,
     },
   ];
 
   const [currentBeatIndex, setCurrentBeatIndex] = useState(0);
   const [isGateOpen, setIsGateOpen] = useState(false);
-  const [selectedChoice, setSelectedChoice] = useState<string | null>(null);
 
   const currentBeat = gateBeats[currentBeatIndex];
   const isFinalDialogue = currentBeatIndex >= gateBeats.length - 1;
@@ -126,9 +80,7 @@ export default function Step4Gateway({
   const handleNextBeat = () => {
     if (currentBeatIndex < gateBeats.length - 1) {
       setCurrentBeatIndex((prev) => prev + 1);
-      setSelectedChoice(null);
     } else {
-      // Trigger Gate Opening Animation Sequence
       setIsGateOpen(true);
     }
   };
@@ -136,7 +88,6 @@ export default function Step4Gateway({
   const handlePreviousBeat = () => {
     if (currentBeatIndex > 0) {
       setCurrentBeatIndex((prev) => prev - 1);
-      setSelectedChoice(null);
     }
   };
 
@@ -159,7 +110,7 @@ export default function Step4Gateway({
       {/* CINEMATIC GATEWAY ENVIRONMENT CANVAS                         */}
       {/* ============================================================ */}
       <div className="relative w-full aspect-[4/3] sm:aspect-[16/9] md:aspect-[21/10] bg-[#02091F] border-4 border-[#3D2612] overflow-hidden shadow-retro-card-lg mb-6 select-none">
-        {/* Base Overworld Background: Mountains & Forest Mist */}
+        {/* Base Background Image */}
         <Image
           src="/images/chapter3_realms.jpg"
           alt="The Gateway of Regent"
@@ -170,7 +121,7 @@ export default function Step4Gateway({
           }`}
         />
 
-        {/* Ambient Dark Atmospheric Overlays */}
+        {/* Ambient Overlays */}
         <div className="absolute inset-0 bg-gradient-to-t from-[#02091F] via-[#02091F]/60 to-transparent" />
         <div className="absolute inset-0 bg-radial-gradient from-transparent via-[#02091F]/30 to-[#02091F]/80" />
 
@@ -199,7 +150,7 @@ export default function Step4Gateway({
           <div className="h-8 bg-[#07112B] border-t-2 border-border-card" />
         </div>
 
-        {/* Top Arch Beam with Gilded Inscription */}
+        {/* Top Arch Beam */}
         <div className="absolute left-4 right-4 sm:left-14 sm:right-14 top-6 h-8 bg-[#091533] border-2 border-regent-gold/70 flex items-center justify-center z-12 shadow-lg">
           <span className="font-pixel text-[10px] sm:text-xs text-regent-gold font-bold tracking-widest uppercase flex items-center gap-2 drop-shadow">
             <Sparkles className="w-3 h-3 text-regent-gold" /> SELF-SPONSORED REALM OF SEETHAWAKA REGENT <Sparkles className="w-3 h-3 text-regent-gold" />
@@ -244,7 +195,7 @@ export default function Step4Gateway({
             >
               <div className="w-full h-full bg-gradient-to-t from-regent-gold/40 via-yellow-200/30 to-transparent blur-md" />
               <div className="absolute font-pixel text-regent-gold text-xs sm:text-sm font-bold uppercase tracking-widest animate-pulse drop-shadow-[0_0_12px_#FFC719]">
-                ✦ PATH TO ROTARY ROOTS UNSEALED ✦
+                ✦ PROLOGUE PORTAL UNSEALED ✦
               </div>
             </motion.div>
           )}
@@ -265,8 +216,14 @@ export default function Step4Gateway({
             transition={{ repeat: Infinity, duration: 3.2, ease: "easeInOut" }}
             className="flex flex-col items-center"
           >
-            <div className="relative w-14 h-14 sm:w-18 sm:h-18 bg-[#02091F] border-2 border-regent-gold p-1 flex items-center justify-center shadow-lg">
-              <span className="font-pixel text-xl sm:text-2xl text-regent-gold">⚔️</span>
+            <div className="relative w-16 h-16 sm:w-20 sm:h-20 shadow-lg">
+              <NPCPortrait
+                npcId="gatekeeper-aaron"
+                expression={currentBeat.speaker === "aaron" ? (currentBeat.expression || "speaking") : "neutral"}
+                isSpeaking={currentBeat.speaker === "aaron"}
+                size="full"
+                showBadge={false}
+              />
             </div>
             <div className="px-2 py-0.5 bg-[#050F2D] border border-regent-gold/50 font-pixel text-[9px] text-regent-gold font-bold uppercase mt-1">
               AARON
@@ -321,7 +278,7 @@ export default function Step4Gateway({
       </div>
 
       {/* ============================================================ */}
-      {/* INTERACTIVE STORYTELLING PROLOGUE DIALOGUE PANEL             */}
+      {/* PURE SCRIPTED DIALOGUE PANEL (No prospectChoices)           */}
       {/* ============================================================ */}
       {!isGateOpen ? (
         <div className="bg-[#0C0603] border-4 border-[#3D2612] p-4 sm:p-6 shadow-2xl relative">
@@ -333,11 +290,9 @@ export default function Step4Gateway({
                 PROLOGUE CHRONICLE • SCENE {currentBeatIndex + 1} OF {gateBeats.length}
               </span>
             </div>
-            {currentBeat.roadmapHighlight && (
-              <span className="px-2 py-0.5 bg-regent-maroon text-regent-gold font-pixel text-[9px] border border-red-950 font-bold uppercase">
-                ✦ {currentBeat.roadmapHighlight}
-              </span>
-            )}
+            <span className="px-2 py-0.5 bg-regent-maroon text-regent-gold font-pixel text-[9px] border border-red-950 font-bold uppercase">
+              ✦ GATEWAY THRESHOLD
+            </span>
           </div>
 
           <div className="flex items-start gap-4">
@@ -361,7 +316,13 @@ export default function Step4Gateway({
                   animate={true}
                 />
               ) : (
-                <span className="font-pixel text-2xl text-regent-gold">⚔️</span>
+                <NPCPortrait
+                  npcId="gatekeeper-aaron"
+                  expression={currentBeat.expression || "speaking"}
+                  size="full"
+                  isSpeaking={true}
+                  showBadge={false}
+                />
               )}
             </div>
 
@@ -394,31 +355,6 @@ export default function Step4Gateway({
                 </motion.div>
               </AnimatePresence>
 
-              {/* Interactive Player Choices */}
-              {currentBeat.prospectChoices && (
-                <div className="mt-3 mb-2 space-y-1.5">
-                  <span className="text-[10px] font-pixel text-regent-gold uppercase">
-                    CHOOSE YOUR RESPONSE:
-                  </span>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {currentBeat.prospectChoices.map((choice, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => setSelectedChoice(choice)}
-                        className={`p-2.5 text-left border text-xs font-serif transition-all flex items-center justify-between gap-2 ${
-                          selectedChoice === choice
-                            ? "bg-[#2D1609] border-regent-gold text-regent-gold font-bold shadow-md"
-                            : "bg-[#140803] border-[#3D2612] text-[#DDD] hover:border-[#6B4223]"
-                        }`}
-                      >
-                        <span>&ldquo;{choice}&rdquo;</span>
-                        <ChevronRight className="w-3.5 h-3.5 text-regent-gold shrink-0" />
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
               {/* Navigation Actions */}
               <div className="flex items-center justify-between pt-3 border-t border-[#3D2612]">
                 <button
@@ -437,7 +373,7 @@ export default function Step4Gateway({
                     icon={<ChevronRight className="w-4 h-4 text-black" />}
                     iconPosition="right"
                   >
-                    CONTINUE STORY ➔
+                    CONTINUE ➔
                   </RetroButton>
                 ) : (
                   <RetroButton
@@ -448,7 +384,7 @@ export default function Step4Gateway({
                     iconPosition="left"
                     className="shadow-retro-yellow animate-pulse"
                   >
-                    OPEN THE GATEWAY →
+                    UNSEAL THE GATEWAY →
                   </RetroButton>
                 )}
               </div>
@@ -457,7 +393,7 @@ export default function Step4Gateway({
         </div>
       ) : (
         /* ============================================================ */
-        /* GATEWAY UNLOCKED REWARDS & COMPLETION BANNER                  */
+        /* GATEWAY UNSEALED THRESHOLD — ENTER PROLOGUE LESSON 0-1       */
         /* ============================================================ */
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
@@ -466,69 +402,69 @@ export default function Step4Gateway({
           className="bg-gradient-to-b from-[#140803] via-[#0C0603] to-[#080302] border-4 border-regent-gold p-5 sm:p-7 shadow-2xl text-center relative"
         >
           <div className="w-16 h-16 mx-auto mb-2 bg-regent-maroon border-2 border-regent-gold flex items-center justify-center shadow-lg">
-            <Award className="w-8 h-8 text-regent-gold" />
+            <DoorOpen className="w-8 h-8 text-regent-gold" />
           </div>
 
           <span className="px-3 py-0.5 bg-regent-maroon text-regent-gold font-pixel text-[10px] border border-red-950 font-bold uppercase tracking-widest">
-            PROLOGUE COMPLETED
+            THRESHOLD UNSEALED • PROLOGUE AWAITS
           </span>
 
           <h2 className="font-pixel text-2xl sm:text-3xl font-bold text-white tracking-wide mt-2 mb-1">
-            THE GATEWAY TO SEETHAWAKA UNSEALED
+            THE GATEWAY STANDS OPEN
           </h2>
 
           <p className="font-serif italic text-xs sm:text-sm text-[#D4C3B3] max-w-lg mx-auto mb-6">
-            “You have crossed the historic threshold. As an aspiring Prospect of the self-sponsored Rotaract Club of Seethawaka Regent, your legend begins now!”
+            “You stand at the threshold of Seethawaka. Complete your first two chronicle lessons to earn the Initiate rank and advance into Rotary Roots.”
           </p>
 
-          {/* Reward Badges Grid */}
+          {/* Active Prologue Chronicle Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-lg mx-auto mb-6 text-left">
             <div className="p-3 bg-[#170B05] border-2 border-regent-gold/80 flex items-center gap-3">
               <div className="w-11 h-11 bg-regent-maroon border border-red-950 flex items-center justify-center shrink-0 shadow-md">
-                <Award className="w-6 h-6 text-regent-gold" />
+                <BookOpen className="w-6 h-6 text-regent-gold" />
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5">
                   <span className="font-pixel text-xs font-bold text-white">
-                    FIRST STEP
+                    LESSON 0-1
                   </span>
                   <span className="text-[8px] font-pixel text-regent-gold bg-yellow-950 px-1 border border-yellow-800">
-                    BADGE
+                    REQUIRED
                   </span>
                 </div>
                 <p className="text-[10px] text-[#B8C0D2] leading-tight mt-0.5">
-                  Every Regent starts somewhere.
+                  The Call Beyond the Gate — Meet Gatekeeper Aaron and discover our purpose.
                 </p>
                 <span className="text-[10px] font-pixel text-regent-gold font-bold">
-                  +50 XP AWARDED
+                  READY AT THRESHOLD
                 </span>
               </div>
             </div>
 
-            <div className="p-3 bg-[#170B05] border-2 border-regent-green/80 flex items-center gap-3">
-              <div className="w-11 h-11 bg-green-950 border border-green-800 flex items-center justify-center shrink-0 shadow-md">
-                <Compass className="w-6 h-6 text-regent-green" />
+            <div className="p-3 bg-[#170B05] border-2 border-regent-blue/80 flex items-center gap-3">
+              <div className="w-11 h-11 bg-[#071536] border border-blue-900 flex items-center justify-center shrink-0 shadow-md">
+                <Scroll className="w-6 h-6 text-regent-blue" />
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5">
                   <span className="font-pixel text-xs font-bold text-white">
-                    ROTARY ROOTS
+                    LESSON 0-2
                   </span>
-                  <span className="text-[8px] font-pixel text-regent-green bg-green-950 px-1 border border-green-800">
-                    UNLOCKED
+                  <span className="text-[8px] font-pixel text-regent-blue bg-blue-950 px-1 border border-blue-800">
+                    NEXT
                   </span>
                 </div>
                 <p className="text-[10px] text-[#B8C0D2] leading-tight mt-0.5">
-                  Discover 1905, Paul Harris & the Four-Way Test.
+                  The Explorer&apos;s Promise — Align your aspirations with the club creed.
                 </p>
-                <span className="text-[10px] font-pixel text-regent-green font-bold">
-                  CHAPTER 1 READY
+                <span className="text-[10px] font-pixel text-regent-blue font-bold">
+                  UNLOCKS INITIATE
                 </span>
               </div>
             </div>
           </div>
 
-          {/* Final Enter Realm CTA */}
+          {/* Final Enter Gateway CTA (Single canonical exit) */}
           <div className="max-w-md mx-auto">
             <RetroButton
               variant="green"
@@ -539,7 +475,7 @@ export default function Step4Gateway({
               iconPosition="right"
               className="shadow-retro-green text-sm sm:text-base py-3.5"
             >
-              ENTER THE REALM OF REGENT →
+              ENTER THE GATEWAY →
             </RetroButton>
           </div>
         </motion.div>

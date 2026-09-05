@@ -42,13 +42,13 @@ export default function RetroButton({
   };
 
   const sizeStyles = {
-    sm: "px-3 py-1.5 text-xs gap-1.5",
-    md: "px-5 py-2.5 text-sm md:text-base gap-2",
-    lg: "px-6 py-3.5 text-base md:text-lg gap-2.5 tracking-wide",
+    sm: "px-3 py-2 min-h-[44px] text-xs gap-1.5 inline-flex items-center justify-center",
+    md: "px-5 py-2.5 min-h-[44px] text-sm md:text-base gap-2 inline-flex items-center justify-center",
+    lg: "px-6 py-3.5 min-h-[48px] text-base md:text-lg gap-2.5 tracking-wide inline-flex items-center justify-center",
   };
 
   const baseStyles = cn(
-    "btn-retro rounded-none select-none tracking-wider",
+    "btn-retro rounded-none select-none tracking-wider focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-regent-gold focus-visible:ring-offset-2 focus-visible:ring-offset-[#02091F]",
     variantStyles[variant],
     sizeStyles[size],
     fullWidth ? "w-full" : "",

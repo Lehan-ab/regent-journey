@@ -25,13 +25,11 @@ import {
 import { usePlayer } from "@/context/PlayerContext";
 
 export default function RegentRealmMap() {
-  const { player, isChapterUnlocked } = usePlayer();
+  const { player, isChapterUnlocked, isChapterCompleted } = usePlayer();
 
   const dynamicLocations: RealmLocation[] = React.useMemo(() => {
     return realmLocations.map((loc) => {
-      const isCompleted =
-        player.completedWorlds?.includes(loc.id) ||
-        (loc.id === "loc-gateway" && player.onboardingComplete);
+      const isCompleted = isChapterCompleted(loc.id);
       const isUnlocked = isChapterUnlocked(loc.id);
       const isCurrent = isUnlocked && !isCompleted;
       const status: "COMPLETED" | "CURRENT" | "LOCKED" = isCompleted
@@ -46,7 +44,7 @@ export default function RegentRealmMap() {
         routeHref: `/journey/${loc.id}`,
       };
     });
-  }, [player.completedWorlds, player.onboardingComplete, isChapterUnlocked]);
+  }, [isChapterCompleted, isChapterUnlocked]);
 
   const [selectedLocation, setSelectedLocation] = useState<RealmLocation | null>(null);
   const [selectedSecret, setSelectedSecret] = useState<MapSecret | null>(null);

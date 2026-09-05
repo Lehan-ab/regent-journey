@@ -2,12 +2,17 @@
 
 import React from "react";
 import Link from "next/link";
-import { ArrowLeft, Target, Sparkles, Clock, MapPin } from "lucide-react";
+import { ArrowLeft, Target, Sparkles, Clock, MapPin, CheckCircle2 } from "lucide-react";
 import RetroCard from "@/components/ui/RetroCard";
 import RetroButton from "@/components/ui/RetroButton";
-import { mockMissions } from "@/data/mockUserData";
+import { usePlayer } from "@/context/PlayerContext";
+import { CANONICAL_MISSIONS } from "@/data/missionsData";
 
 export default function MissionsPage() {
+  const { player, isHydrated, enrollMission } = usePlayer();
+
+  const totalAvailableXp = CANONICAL_MISSIONS.reduce((acc, m) => acc + m.rewardXp, 0);
+
   return (
     <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 pt-4 sm:pt-6 pb-12">
       {/* Header */}
@@ -19,7 +24,7 @@ export default function MissionsPage() {
           <ArrowLeft className="w-4 h-4" /> BACK TO REALM MAP
         </Link>
         <span className="font-pixel text-xs text-regent-gold">
-          +500 XP AVAILABLE
+          +{totalAvailableXp} XP AVAILABLE
         </span>
       </div>
 
@@ -37,52 +42,77 @@ export default function MissionsPage() {
 
       {/* Missions Grid */}
       <div className="space-y-4">
-        {mockMissions.map((mission) => (
-          <RetroCard key={mission.id} className="p-4 sm:p-5 bg-[#071331]">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div className="space-y-1.5 flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="px-2 py-0.5 bg-regent-maroon text-white font-pixel text-[9px] uppercase border border-red-950 font-bold">
-                    {mission.type}
-                  </span>
-                  <span className="px-2 py-0.5 bg-regent-blue/20 text-regent-blue font-pixel text-[9px] border border-regent-blue/50">
-                    {mission.status}
-                  </span>
-                  <span className="text-[10px] font-pixel text-text-muted flex items-center gap-1">
-                    <Clock className="w-3 h-3 text-regent-gold" /> {mission.date}
-                  </span>
+        {CANONICAL_MISSIONS.map((mission) => {
+          const isVerified = isHydrated && player.missions?.verified?.includes(mission.id);
+          const isEnrolled = isHydrated && player.missions?.enrolled?.includes(mission.id);
+
+          return (
+            <RetroCard key={mission.id} className="p-4 sm:p-5 bg-[#071331]">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="space-y-1.5 flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="px-2 py-0.5 bg-regent-maroon text-white font-pixel text-[9px] uppercase border border-red-950 font-bold">
+                      {mission.type}
+                    </span>
+                    {isVerified ? (
+                      <span className="px-2 py-0.5 bg-green-950 text-regent-green font-pixel text-[9px] border border-green-800 font-bold flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3" /> VERIFIED
+                      </span>
+                    ) : isEnrolled ? (
+                      <span className="px-2 py-0.5 bg-blue-950 text-regent-blue font-pixel text-[9px] border border-blue-800 font-bold">
+                        ENROLLED
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 bg-regent-blue/20 text-regent-blue font-pixel text-[9px] border border-regent-blue/50">
+                        {mission.status}
+                      </span>
+                    )}
+                    <span className="text-[10px] font-pixel text-text-muted flex items-center gap-1">
+                      <Clock className="w-3 h-3 text-regent-gold" /> {mission.date}
+                    </span>
+                  </div>
+
+                  <h3 className="font-pixel text-base sm:text-lg font-bold text-white tracking-wide truncate">
+                    {mission.title}
+                  </h3>
+                  <p className="font-body text-xs sm:text-sm text-text-secondary leading-relaxed">
+                    {mission.tagline}
+                  </p>
+
+                  <div className="flex items-center gap-1.5 text-[11px] text-text-muted pt-0.5">
+                    <MapPin className="w-3.5 h-3.5 text-red-400 shrink-0" />
+                    <span className="truncate">{mission.location || "Seethawaka / Hybrid"}</span>
+                  </div>
                 </div>
 
-                <h3 className="font-pixel text-base sm:text-lg font-bold text-white tracking-wide truncate">
-                  {mission.title}
-                </h3>
-                <p className="font-body text-xs sm:text-sm text-text-secondary leading-relaxed">
-                  {mission.tagline}
-                </p>
+                <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-2.5 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-border-card">
+                  <div className="flex items-center gap-1.5 font-pixel text-xs sm:text-sm font-bold text-regent-gold bg-[#02091F] px-2.5 py-1 border border-border-card">
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>+{mission.rewardXp} XP</span>
+                  </div>
 
-                <div className="flex items-center gap-1.5 text-[11px] text-text-muted pt-0.5">
-                  <MapPin className="w-3.5 h-3.5 text-red-400 shrink-0" />
-                  <span className="truncate">{mission.location || "Seethawaka / Hybrid"}</span>
+                  {isVerified ? (
+                    <RetroButton variant="green" size="sm" disabled>
+                      COMPLETED & VERIFIED
+                    </RetroButton>
+                  ) : isEnrolled ? (
+                    <RetroButton variant="outline" size="sm" disabled>
+                      ENROLLED • PENDING ATTENDANCE
+                    </RetroButton>
+                  ) : (
+                    <RetroButton
+                      variant="green"
+                      size="sm"
+                      onClick={() => enrollMission(mission.id)}
+                    >
+                      ENROLL IN MISSION
+                    </RetroButton>
+                  )}
                 </div>
               </div>
-
-              <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-2.5 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-border-card">
-                <div className="flex items-center gap-1.5 font-pixel text-xs sm:text-sm font-bold text-regent-gold bg-[#02091F] px-2.5 py-1 border border-border-card">
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>+{mission.rewardXp} XP</span>
-                </div>
-
-                <RetroButton
-                  variant="green"
-                  size="sm"
-                  onClick={() => alert(`Registered interest for: ${mission.title}! Official on-ground verification required.`)}
-                >
-                  ENROLL IN MISSION
-                </RetroButton>
-              </div>
-            </div>
-          </RetroCard>
-        ))}
+            </RetroCard>
+          );
+        })}
       </div>
     </div>
   );

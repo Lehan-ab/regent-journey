@@ -73,20 +73,12 @@ export default function OnboardingPage() {
     setName(name);
     setExplorerId(explorerId);
     updateAvatar(avatar);
-    // Award +25 XP if first time
-    if (player.xp < 25) {
-      addXp(25, "Explorer Profile Created");
-    }
     goToStep("companion");
   };
 
   // Handle Step 2 Complete (Companion)
   const handleCompanionConfirm = (companionId: CompanionId) => {
     setCompanion(companionId);
-    // Award +25 XP if not already awarded
-    if (player.xp < 50) {
-      addXp(25, "Companion Alliance Forged");
-    }
     goToStep("interests");
   };
 
@@ -97,10 +89,10 @@ export default function OnboardingPage() {
     goToStep("gateway");
   };
 
-  // Handle Step 4 Complete (Gateway -> Enter Realm)
+  // Handle Step 4 Complete (Gateway -> Enter Gateway Prologue)
   const handleEnterRealm = () => {
     completeOnboarding();
-    router.push("/home");
+    router.push("/journey/loc-gateway?lesson=lesson-0-1");
   };
 
   // Back Navigation Handler
