@@ -11,12 +11,16 @@ import {
   Flag,
   Landmark,
   Trees,
+  Crown,
+  Shield,
+  Layers,
 } from "lucide-react";
 import PixelProgressBar from "@/components/ui/PixelProgressBar";
 import LocationDetailPanel from "./LocationDetailPanel";
 import PixelAvatar from "@/components/avatar/PixelAvatar";
 import PixelCompanion from "@/components/companion/PixelCompanion";
 import {
+  atlasLocations,
   realmLocations,
   RealmLocation,
   mapSecrets,
@@ -27,10 +31,17 @@ import { usePlayer } from "@/context/PlayerContext";
 export default function RegentRealmMap() {
   const { player, isChapterUnlocked, isChapterCompleted } = usePlayer();
 
-  const dynamicLocations: RealmLocation[] = React.useMemo(() => {
-    return realmLocations.map((loc) => {
-      const isCompleted = isChapterCompleted(loc.id);
-      const isUnlocked = isChapterUnlocked(loc.id);
+  // Dynamic Atlas Locations with state resolution
+  const dynamicAtlasLocations: RealmLocation[] = React.useMemo(() => {
+    return atlasLocations.map((loc) => {
+      // Gateway checks both canonical chapter-1 and legacy loc-gateway
+      const isCompleted =
+        isChapterCompleted(loc.id) ||
+        (loc.id === "loc-gateway" && isChapterCompleted("chapter-1"));
+      const isUnlocked =
+        isChapterUnlocked(loc.id) ||
+        (loc.id === "loc-gateway" && isChapterUnlocked("chapter-1"));
+
       const isCurrent = isUnlocked && !isCompleted;
       const status: "COMPLETED" | "CURRENT" | "LOCKED" = isCompleted
         ? "COMPLETED"
@@ -41,7 +52,7 @@ export default function RegentRealmMap() {
       return {
         ...loc,
         status,
-        routeHref: `/journey/${loc.id}`,
+        routeHref: loc.routeHref || `/journey/${loc.id}`,
       };
     });
   }, [isChapterCompleted, isChapterUnlocked]);
@@ -51,11 +62,13 @@ export default function RegentRealmMap() {
   const [discoveredSecrets, setDiscoveredSecrets] = useState<string[]>([]);
   const [hoveredLocation, setHoveredLocation] = useState<RealmLocation | null>(null);
 
-  // Initialize selected location to current active chapter
+  // Initialize selected location to current active chapter or first uncompleted
   React.useEffect(() => {
-    const currentLoc = dynamicLocations.find((loc) => loc.status === "CURRENT") || dynamicLocations[1];
+    const currentLoc =
+      dynamicAtlasLocations.find((loc) => loc.status === "CURRENT") ||
+      dynamicAtlasLocations[0];
     setSelectedLocation((prev) => prev || currentLoc);
-  }, [dynamicLocations]);
+  }, [dynamicAtlasLocations]);
 
   const handleSelectSecret = (secret: MapSecret) => {
     setSelectedSecret(secret);
@@ -72,32 +85,33 @@ export default function RegentRealmMap() {
 
   return (
     <div className="w-full">
-      {/* Top Map Header Strip */}
+      {/* Top Map Header Strip — The Regent Realm Atlas */}
       <div className="bg-[#071331] border-2 border-border-card p-3 sm:p-4 mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-retro-card">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="p-2 bg-[#02091F] border border-regent-gold text-regent-gold shrink-0 shadow-sm">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="p-2.5 bg-[#02091F] border-2 border-regent-gold text-regent-gold shrink-0 shadow-sm relative">
             <Compass className="w-5 h-5 animate-spin-slow" />
+            <div className="absolute -top-1 -right-1 w-2 h-2 bg-regent-gold rounded-full animate-ping" />
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <h2 className="font-pixel text-sm sm:text-base font-bold text-white tracking-wider truncate">
-                THE REALM OF REGENT
+                THE REGENT REALM ATLAS
               </h2>
-              <span className="px-2 py-0.5 bg-[#02091F] text-regent-gold text-[9px] font-pixel border border-regent-gold/40 shrink-0">
-                LIVING OVERWORLD
+              <span className="px-2 py-0.5 bg-[#02091F] text-regent-gold text-[9px] font-pixel border border-regent-gold/50 shrink-0">
+                16-BIT OVERWORLD
               </span>
             </div>
             <p className="text-[11px] text-text-muted font-body truncate">
-              Explore 9 chapters & the prologue across illustrated Seethawaka landscapes
+              Ascend through 8 canonical realm sanctuaries from the Gateway to the Regent Citadel
             </p>
           </div>
         </div>
 
-        {/* Overall Journey Progress Indicator */}
-        <div className="w-full sm:w-auto sm:min-w-[210px] bg-[#02091F] p-2 border border-border-card shrink-0">
-          <div className="flex items-center justify-between text-[10px] font-pixel mb-1">
-            <span className="text-regent-gold flex items-center gap-1">
-              <Sparkles className="w-3 h-3" /> JOURNEY PROGRESS
+        {/* Journey Progress Gauge */}
+        <div className="w-full sm:w-auto sm:min-w-[220px] bg-[#02091F] p-2.5 border border-border-card shrink-0">
+          <div className="flex items-center justify-between text-[10px] font-pixel mb-1.5">
+            <span className="text-regent-gold flex items-center gap-1.5">
+              <Sparkles className="w-3 h-3 text-yellow-400" /> EXPEDITION PROGRESS
             </span>
             <span className="text-white font-bold">{player.journeyProgress}%</span>
           </div>
@@ -110,169 +124,165 @@ export default function RegentRealmMap() {
         </div>
       </div>
 
-      {/* Main Grid: Living Overworld Map + Inspector Panel */}
+      {/* Main Grid: Retro RPG Atlas Canvas + Inspector Panel */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-        {/* Map Canvas (12 cols mobile, 7 cols desktop) */}
+        {/* Map Canvas Frame (12 cols mobile, 7/8 cols desktop) */}
         <div className="lg:col-span-7 xl:col-span-8">
-          <div className="relative w-full aspect-[4/3] sm:aspect-[16/10] md:aspect-[16/11] bg-[#02091F] border-2 border-border-card overflow-hidden shadow-retro-card-lg select-none group">
-            {/* 1. Base Layer: Rich Pixel Art Overworld Landscape */}
+          <div className="relative w-full aspect-[4/3] sm:aspect-[16/10] md:aspect-[16/11] bg-[#02091F] border-4 border-[#071331] overflow-hidden shadow-retro-card-lg select-none group">
+            {/* Retro Parchment/Corner Rivets */}
+            <div className="absolute top-1 left-1 w-3 h-3 border-t-2 border-l-2 border-regent-gold/60 z-30 pointer-events-none" />
+            <div className="absolute top-1 right-1 w-3 h-3 border-t-2 border-r-2 border-regent-gold/60 z-30 pointer-events-none" />
+            <div className="absolute bottom-1 left-1 w-3 h-3 border-b-2 border-l-2 border-regent-gold/60 z-30 pointer-events-none" />
+            <div className="absolute bottom-1 right-1 w-3 h-3 border-b-2 border-r-2 border-regent-gold/60 z-30 pointer-events-none" />
+
+            {/* 1. Base Layer: 16-Bit Hand-Crafted Landscape Art */}
             <Image
               src="/images/chapter3_realms.jpg"
-              alt="Regent Realm Living Overworld"
+              alt="Regent Realm Atlas Overworld"
               fill
               priority
               className="object-cover object-center brightness-100 contrast-105"
             />
 
-            {/* 2. Soft Ambient Lighting Gradients */}
-            <div className="absolute inset-0 bg-gradient-to-t from-[#02091F]/30 via-transparent to-[#02091F]/20 pointer-events-none" />
+            {/* Ambient Lighting Gradients */}
+            <div className="absolute inset-0 bg-gradient-to-t from-[#02091F]/40 via-transparent to-[#02091F]/30 pointer-events-none" />
 
-            {/* 
-              ============================================================
-              3. ATMOSPHERIC FOG & MIST OF DISCOVERY
-              Layered soft mist, cloud veils, and regional haze
-              ============================================================
-            */}
-
-            {/* Heavy Distant Summit Mist (Chapters 7, 8, 9 - Top 35% of Map) */}
+            {/* Retro Coordinate Overlay Grid (Subtle) */}
             <div
-              className="absolute inset-0 pointer-events-none z-10"
+              className="absolute inset-0 pointer-events-none opacity-10 z-10"
               style={{
-                background:
-                  "linear-gradient(to bottom, rgba(200, 225, 255, 0.28) 0%, rgba(135, 175, 225, 0.22) 20%, rgba(20, 45, 90, 0.15) 35%, transparent 48%)",
-                backdropFilter: "blur(0.8px)",
-                maskImage: "linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.8) 25%, rgba(0,0,0,0) 45%)",
-                WebkitMaskImage: "linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.8) 25%, rgba(0,0,0,0) 45%)",
+                backgroundImage:
+                  "linear-gradient(to right, rgba(255,255,255,0.2) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.2) 1px, transparent 1px)",
+                backgroundSize: "10% 10%",
               }}
             />
 
-            {/* Drifting Summit Cloud Layer 1 */}
-            <motion.div
-              animate={{ x: ["-12%", "12%", "-12%"] }}
-              transition={{ repeat: Infinity, duration: 22, ease: "easeInOut" }}
-              className="absolute top-0 inset-x-[-20%] h-36 pointer-events-none z-11 opacity-60"
+            {/* 
+              ============================================================
+              2. EXPEDITION TRAIL LAYER (SVG Trail Connecting 8 Locations)
+              ============================================================
+            */}
+            <svg
+              className="absolute inset-0 w-full h-full pointer-events-none z-15"
+              viewBox="0 0 100 100"
+              preserveAspectRatio="none"
+            >
+              <defs>
+                <linearGradient id="goldTrailGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#FFC719" />
+                  <stop offset="100%" stopColor="#F59E0B" />
+                </linearGradient>
+                <filter id="trailGlow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="1" result="glow" />
+                  <feComposite in="SourceGraphic" in2="glow" operator="over" />
+                </filter>
+              </defs>
+
+              {dynamicAtlasLocations.map((loc, idx) => {
+                if (idx === dynamicAtlasLocations.length - 1) return null;
+                const nextLoc = dynamicAtlasLocations[idx + 1];
+
+                const isCompletedSegment =
+                  loc.status === "COMPLETED" &&
+                  (nextLoc.status === "COMPLETED" || nextLoc.status === "CURRENT");
+                const isActiveSegment =
+                  loc.status === "COMPLETED" && nextLoc.status === "CURRENT";
+                const isLockedSegment = nextLoc.status === "LOCKED";
+
+                // Control point curve
+                const midX = (loc.coords.x + nextLoc.coords.x) / 2 + (idx % 2 === 0 ? 3 : -3);
+                const midY = (loc.coords.y + nextLoc.coords.y) / 2;
+
+                return (
+                  <g key={`trail-${loc.id}-${nextLoc.id}`}>
+                    {/* Shadow under trail */}
+                    <path
+                      d={`M ${loc.coords.x} ${loc.coords.y} Q ${midX} ${midY}, ${nextLoc.coords.x} ${nextLoc.coords.y}`}
+                      fill="none"
+                      stroke="#000000"
+                      strokeWidth="2.5"
+                      strokeOpacity="0.6"
+                    />
+                    {/* Dynamic state trail line */}
+                    <path
+                      d={`M ${loc.coords.x} ${loc.coords.y} Q ${midX} ${midY}, ${nextLoc.coords.x} ${nextLoc.coords.y}`}
+                      fill="none"
+                      stroke={
+                        isCompletedSegment
+                          ? "url(#goldTrailGrad)"
+                          : isActiveSegment
+                          ? "#20A9F6"
+                          : isLockedSegment
+                          ? "#334155"
+                          : "#64748B"
+                      }
+                      strokeWidth={isCompletedSegment ? "1.8" : isActiveSegment ? "2" : "1.2"}
+                      strokeDasharray={
+                        isCompletedSegment
+                          ? "none"
+                          : isActiveSegment
+                          ? "3, 2"
+                          : "1.5, 2.5"
+                      }
+                      strokeOpacity={isLockedSegment ? 0.4 : 0.95}
+                      filter={isCompletedSegment || isActiveSegment ? "url(#trailGlow)" : undefined}
+                    />
+                  </g>
+                );
+              })}
+            </svg>
+
+            {/* 
+              ============================================================
+              3. REGIONAL ATMOSPHERIC CLOUDS & MIST
+              ============================================================
+            */}
+            {/* Distant Summit Fog (Citadel & Frontier) */}
+            <div
+              className="absolute inset-x-0 top-0 h-40 pointer-events-none z-12"
               style={{
                 background:
-                  "radial-gradient(ellipse 60% 40% at 50% 20%, rgba(255, 255, 255, 0.35) 0%, rgba(180, 215, 255, 0.15) 50%, transparent 80%)",
+                  "linear-gradient(to bottom, rgba(15, 30, 65, 0.45) 0%, rgba(30, 50, 95, 0.25) 45%, transparent 100%)",
+                backdropFilter: "blur(0.5px)",
+              }}
+            />
+
+            {/* Drifting Summit Cloud Layer */}
+            <motion.div
+              animate={{ x: ["-10%", "10%", "-10%"] }}
+              transition={{ repeat: Infinity, duration: 25, ease: "easeInOut" }}
+              className="absolute top-0 inset-x-[-20%] h-32 pointer-events-none z-12 opacity-50"
+              style={{
+                background:
+                  "radial-gradient(ellipse 60% 40% at 50% 20%, rgba(255, 255, 255, 0.3) 0%, rgba(180, 215, 255, 0.12) 50%, transparent 80%)",
                 filter: "blur(12px)",
               }}
             />
 
-            {/* Drifting Summit Cloud Layer 2 (Opposite direction) */}
-            <motion.div
-              animate={{ x: ["10%", "-10%", "10%"] }}
-              transition={{ repeat: Infinity, duration: 28, ease: "easeInOut" }}
-              className="absolute top-4 inset-x-[-20%] h-32 pointer-events-none z-11 opacity-45"
-              style={{
-                background:
-                  "radial-gradient(ellipse 50% 35% at 40% 30%, rgba(220, 240, 255, 0.4) 0%, rgba(140, 185, 240, 0.1) 60%, transparent 85%)",
-                filter: "blur(14px)",
-              }}
-            />
-
-            {/* Medium Mist Veil (Chapters 4, 5, 6 - Mid 40% to 65% of Map) */}
-            <div
-              className="absolute inset-0 pointer-events-none z-10"
-              style={{
-                background:
-                  "radial-gradient(ellipse 80% 30% at 50% 50%, rgba(180, 210, 250, 0.14) 0%, rgba(120, 160, 220, 0.08) 50%, transparent 85%)",
-                filter: "blur(6px)",
-              }}
-            />
-
-            {/* Light Drifting Valley Wisp (Across Rotaract Harbor & Regent Keep) */}
-            <motion.div
-              animate={{ x: ["-8%", "8%", "-8%"], opacity: [0.25, 0.45, 0.25] }}
-              transition={{ repeat: Infinity, duration: 18, ease: "easeInOut" }}
-              className="absolute top-[52%] inset-x-[-10%] h-24 pointer-events-none z-11"
-              style={{
-                background:
-                  "radial-gradient(ellipse 65% 25% at 55% 50%, rgba(210, 235, 255, 0.25) 0%, rgba(160, 200, 255, 0.08) 55%, transparent 80%)",
-                filter: "blur(10px)",
-              }}
-            />
-
-            {/* Fully Clear Sunlight Opening over Rotary Roots & The Gateway (Bottom 65% to 100%) */}
-            <div
-              className="absolute bottom-0 inset-x-0 h-44 pointer-events-none z-12"
-              style={{
-                background:
-                  "radial-gradient(ellipse 70% 50% at 30% 80%, rgba(255, 235, 180, 0.12) 0%, rgba(155, 234, 45, 0.06) 45%, transparent 75%)",
-              }}
-            />
-
-            {/* 
-              ============================================================
-              4. THEMED LANDMARK LUMINOUS AURAS
-              ============================================================
-            */}
-
-            {/* Chapter 1: Rotary Roots - Seethawaka Botanical Garden Emerald Grove */}
-            <div
-              style={{ left: "32%", top: "76%" }}
-              className="absolute -translate-x-1/2 -translate-y-1/2 pointer-events-none z-12"
-            >
-              <div className="w-16 h-16 rounded-full bg-emerald-400/25 blur-md animate-pulse" />
-            </div>
-
-            {/* Chapter 3: Regent Keep - Rajasinghe Castle Ruins Crimson Pride */}
-            <div
-              style={{ left: "24%", top: "56%" }}
-              className="absolute -translate-x-1/2 -translate-y-1/2 pointer-events-none z-12"
-            >
-              <div className="w-14 h-14 rounded-full bg-red-800/30 blur-md" />
-            </div>
-
-            {/* Chapter 4: The Seven Realms - Signal Spire Arcane Light */}
-            <motion.div
-              animate={{ opacity: [0.35, 0.85, 0.35], scale: [0.95, 1.1, 0.95] }}
-              transition={{ repeat: Infinity, duration: 3.5, ease: "easeInOut" }}
-              style={{ left: "54%", top: "58%" }}
-              className="absolute -translate-x-1/2 -translate-y-1/2 pointer-events-none z-12"
-            >
-              <div className="w-16 h-16 rounded-full bg-purple-400/25 blur-md" />
-            </motion.div>
-
-            {/* Chapter 5: Project Forge - Industrial Glow */}
-            <motion.div
-              animate={{ opacity: [0.4, 0.9, 0.4] }}
-              transition={{ repeat: Infinity, duration: 2.2, ease: "easeInOut" }}
-              style={{ left: "82%", top: "52%" }}
-              className="absolute -translate-x-1/2 -translate-y-1/2 pointer-events-none z-12"
-            >
-              <div className="w-12 h-12 rounded-full bg-amber-400/25 blur-md" />
-            </motion.div>
-
-            {/* Chapter 9: Membership Citadel - Mountain Summit Beacon */}
-            <motion.div
-              animate={{ opacity: [0.3, 0.85, 0.3] }}
-              transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
-              style={{ left: "50%", top: "12%" }}
-              className="absolute -translate-x-1/2 -translate-y-1/2 pointer-events-none z-12"
-            >
-              <div className="w-24 h-24 rounded-full bg-yellow-300/30 blur-lg" />
-            </motion.div>
-
-            {/* Ambient Fireflies over Botanical Groves */}
+            {/* Ambient Floating Fireflies */}
             <div className="absolute inset-0 pointer-events-none z-14 overflow-hidden">
               {[...Array(6)].map((_, i) => (
                 <motion.div
                   key={i}
                   initial={{
-                    x: `${25 + (i % 3) * 12}%`,
-                    y: `${70 + (i % 2) * 10}%`,
+                    x: `${20 + (i % 4) * 18}%`,
+                    y: `${60 + (i % 2) * 16}%`,
                     opacity: 0.2,
                   }}
                   animate={{
-                    y: [`${70 + (i % 2) * 10}%`, `${64 + (i % 2) * 8}%`, `${70 + (i % 2) * 10}%`],
-                    opacity: [0.2, 0.8, 0.2],
-                    scale: [0.8, 1.2, 0.8],
+                    y: [
+                      `${60 + (i % 2) * 16}%`,
+                      `${54 + (i % 2) * 14}%`,
+                      `${60 + (i % 2) * 16}%`,
+                    ],
+                    opacity: [0.2, 0.85, 0.2],
+                    scale: [0.8, 1.3, 0.8],
                   }}
                   transition={{
                     repeat: Infinity,
-                    duration: 3 + i,
+                    duration: 3 + i * 0.8,
                     ease: "easeInOut",
-                    delay: i * 0.4,
+                    delay: i * 0.5,
                   }}
                   className="absolute w-1.5 h-1.5 rounded-full bg-regent-gold shadow-[0_0_6px_#FFC719]"
                 />
@@ -281,7 +291,7 @@ export default function RegentRealmMap() {
 
             {/* 
               ============================================================
-              5. MAP SECRETS (Clickable Heritage Landmarks)
+              4. MAP SECRETS (Clickable Heritage Lore & Discovery Pins)
               ============================================================
             */}
             {mapSecrets.map((secret) => {
@@ -291,19 +301,19 @@ export default function RegentRealmMap() {
               return (
                 <motion.button
                   key={secret.id}
-                  whileHover={{ scale: 1.2 }}
+                  whileHover={{ scale: 1.25 }}
                   whileTap={{ scale: 0.9 }}
                   onClick={() => handleSelectSecret(secret)}
                   style={{
                     left: `${secret.coords.x}%`,
                     top: `${secret.coords.y}%`,
                   }}
-                  className={`absolute -translate-x-1/2 -translate-y-1/2 z-22 p-1 rounded-full border transition-all cursor-pointer ${
+                  className={`absolute -translate-x-1/2 -translate-y-1/2 z-22 p-1 border transition-all cursor-pointer shadow-sm ${
                     isSelected
-                      ? "bg-regent-gold text-black border-white shadow-[0_0_10px_#FFC719]"
+                      ? "bg-regent-gold text-black border-white shadow-[0_0_12px_#FFC719]"
                       : isFound
-                      ? "bg-[#02091F]/90 text-regent-gold border-yellow-900/60"
-                      : "bg-[#071331]/80 text-text-muted border-border-card/60 hover:text-white animate-bounce-slight"
+                      ? "bg-[#02091F]/90 text-regent-gold border-yellow-800/80"
+                      : "bg-[#071331]/80 text-text-muted border-border-card/70 hover:text-white animate-bounce-slight"
                   }`}
                   aria-label={secret.title}
                 >
@@ -320,10 +330,10 @@ export default function RegentRealmMap() {
 
             {/* 
               ============================================================
-              6. CANONICAL 10 WORLD CHAPTER NODES (Prologue + Chapters 1-9)
+              5. THE 8 CANONICAL REGENT REALM ATLAS LOCATIONS
               ============================================================
             */}
-            {dynamicLocations.map((loc) => {
+            {dynamicAtlasLocations.map((loc) => {
               const isSelected = selectedLocation?.id === loc.id;
               const isCurrent = loc.status === "CURRENT";
               const isCompleted = loc.status === "COMPLETED";
@@ -341,95 +351,234 @@ export default function RegentRealmMap() {
                   onMouseEnter={() => setHoveredLocation(loc)}
                   onMouseLeave={() => setHoveredLocation(null)}
                 >
-                  {/* Outer Pulsing Aura for Selected/Current Node */}
+                  {/* Outer Pulsing Aura for Selected or Current Node */}
                   {isSelected && (
-                    <div className="absolute -inset-2.5 rounded-none border-2 border-regent-blue/80 bg-regent-blue/20 animate-pulse pointer-events-none" />
+                    <div className="absolute -inset-3 rounded-none border-2 border-regent-blue/90 bg-regent-blue/20 animate-pulse pointer-events-none" />
                   )}
 
-                  {/* Chapter Marker Node */}
-                  <motion.div
-                    whileHover={{ scale: 1.2 }}
-                    whileTap={{ scale: 0.95 }}
-                    className={`relative flex items-center justify-center p-1 sm:p-1.5 transition-all ${
-                      isSelected
-                        ? "bg-regent-blue text-black border-2 border-white shadow-[0_0_14px_#20A9F6]"
-                        : isCurrent
-                        ? "bg-regent-maroon text-white border-2 border-regent-gold shadow-[0_0_12px_#FFC719] animate-pulse"
-                        : isCompleted
-                        ? "bg-green-950 text-regent-green border border-regent-green/70"
-                        : "bg-[#071331]/95 text-text-muted border border-border-card/80 hover:border-text-secondary"
-                    }`}
-                  >
-                    {isCompleted ? (
-                      <CheckCircle2 className="w-3.5 h-3.5 text-regent-green" />
-                    ) : isLocked ? (
-                      <Lock className="w-3 h-3 text-text-muted" />
-                    ) : isCurrent ? (
-                      <Sparkles className="w-3.5 h-3.5 text-regent-gold fill-regent-gold" />
-                    ) : (
-                      <Flag className="w-3 h-3 text-white" />
-                    )}
+                  {/* 
+                    ----------------------------------------------------
+                    STATE 1: LOCKED (Fog of War + Darkened Pixel Art)
+                    ----------------------------------------------------
+                  */}
+                  {isLocked && (
+                    <div className="relative flex items-center justify-center">
+                      {/* Swirling Local Fog Patch */}
+                      <motion.div
+                        animate={{
+                          opacity: [0.7, 0.95, 0.7],
+                          scale: [0.95, 1.08, 0.95],
+                          rotate: [0, 4, 0],
+                        }}
+                        transition={{
+                          repeat: Infinity,
+                          duration: 5,
+                          ease: "easeInOut",
+                        }}
+                        className="absolute -inset-6 pointer-events-none rounded-full"
+                        style={{
+                          background:
+                            "radial-gradient(circle, rgba(10, 20, 48, 0.92) 0%, rgba(15, 30, 68, 0.75) 50%, transparent 75%)",
+                          backdropFilter: "blur(1.5px)",
+                        }}
+                      />
 
-                    {/* Small Chapter Badge */}
-                    <span className="absolute -top-2.5 -right-2.5 bg-regent-maroon px-1 py-0.2 border border-red-950 text-[7px] font-pixel text-white font-bold leading-none shadow-sm">
-                      {loc.isPrologue ? "P" : loc.chapterNumber}
-                    </span>
-                  </motion.div>
+                      {/* Darkened Desaturated Location Icon */}
+                      <motion.div
+                        whileHover={{ scale: 1.08 }}
+                        className={`relative w-9 h-9 sm:w-10 sm:h-10 border-2 border-slate-700/80 bg-slate-950/90 flex items-center justify-center filter grayscale brightness-50 contrast-125 shadow-inner transition-all ${
+                          isSelected ? "border-slate-400 ring-2 ring-slate-400/50" : ""
+                        }`}
+                      >
+                        <Lock className="w-4 h-4 text-slate-400" />
 
-                  {/* Player & Companion Standing at Current World */}
-                  {isCurrent && (
-                    <motion.div
-                      animate={{ y: [0, -4, 0] }}
-                      transition={{ repeat: Infinity, duration: 2.4, ease: "easeInOut" }}
-                      className="absolute -top-12 left-1/2 -translate-x-1/2 flex items-end gap-1.5 pointer-events-none z-30"
-                    >
-                      {/* Avatar Mini Sprite */}
-                      <div className="flex flex-col items-center">
-                        <div className="relative w-9 h-10 rounded-none border-2 border-regent-gold bg-[#02091F]/90 p-0.5 shadow-[0_0_10px_#FFC719] flex items-center justify-center">
-                          <PixelAvatar
-                            explorerId={player.explorerId}
-                            config={player.avatar}
-                            variant="mini"
-                            size="full"
-                            animate={true}
+                        {/* Miniature Chapter Number in Iron Frame */}
+                        <span className="absolute -top-2 -right-2 bg-slate-900 px-1 py-0.5 border border-slate-700 text-[7px] font-pixel text-slate-400 leading-none">
+                          {loc.atlasIndex}
+                        </span>
+                      </motion.div>
+                    </div>
+                  )}
+
+                  {/* 
+                    ----------------------------------------------------
+                    STATE 2: UNLOCKED / CURRENT (Vibrant Animation)
+                    ----------------------------------------------------
+                  */}
+                  {!isLocked && !isCompleted && (
+                    <div className="relative flex items-center justify-center">
+                      {/* Sunbeam / Arcane Aura Breaking Through Fog */}
+                      <motion.div
+                        animate={{
+                          scale: [1, 1.25, 1],
+                          opacity: [0.4, 0.85, 0.4],
+                        }}
+                        transition={{
+                          repeat: Infinity,
+                          duration: 3,
+                          ease: "easeInOut",
+                        }}
+                        className="absolute -inset-4 rounded-full bg-cyan-400/25 blur-md pointer-events-none"
+                      />
+
+                      {/* Vibrant 16-Bit Unlocked Node */}
+                      <motion.div
+                        whileHover={{ scale: 1.18 }}
+                        whileTap={{ scale: 0.95 }}
+                        className={`relative w-10 h-10 sm:w-11 sm:h-11 border-2 flex items-center justify-center transition-all ${
+                          isSelected
+                            ? "bg-regent-blue text-black border-2 border-white shadow-[0_0_16px_#20A9F6]"
+                            : isCurrent
+                            ? "bg-gradient-to-br from-regent-maroon via-red-900 to-amber-900 text-white border-2 border-regent-gold shadow-[0_0_14px_#FFC719] animate-pulse"
+                            : "bg-gradient-to-br from-[#0c2461] to-[#1e3799] text-cyan-300 border-2 border-cyan-400/80 shadow-[0_0_10px_#20A9F6]"
+                        }`}
+                      >
+                        <Flag className="w-4 h-4 text-regent-gold animate-bounce-slight" />
+
+                        {/* Atlas Step Number */}
+                        <span className="absolute -top-2.5 -right-2.5 bg-regent-maroon px-1.5 py-0.5 border border-regent-gold text-[7px] font-pixel text-white font-bold leading-none shadow-md">
+                          {loc.atlasIndex}
+                        </span>
+                      </motion.div>
+
+                      {/* Player & Companion Standing at Current Node */}
+                      {isCurrent && (
+                        <motion.div
+                          animate={{ y: [0, -5, 0] }}
+                          transition={{ repeat: Infinity, duration: 2.2, ease: "easeInOut" }}
+                          className="absolute -top-12 left-1/2 -translate-x-1/2 flex items-end gap-1 pointer-events-none z-30"
+                        >
+                          {/* Avatar Mini Sprite */}
+                          <div className="flex flex-col items-center">
+                            <div className="relative w-8 h-9 rounded-none border-2 border-regent-gold bg-[#02091F]/90 p-0.5 shadow-[0_0_10px_#FFC719] flex items-center justify-center">
+                              <PixelAvatar
+                                explorerId={player.explorerId}
+                                config={player.avatar}
+                                variant="mini"
+                                size="full"
+                                animate={true}
+                              />
+                            </div>
+                            <div className="w-6 h-1 rounded-full bg-black/70 blur-[1px] mt-0.5" />
+                          </div>
+
+                          {/* Companion Mini Sprite */}
+                          <div className="flex flex-col items-center">
+                            <div className="relative w-6 h-6 border border-border-card bg-[#02091F]/90 p-0.5 flex items-center justify-center">
+                              <PixelCompanion
+                                companionId={player.companion || "nova"}
+                                emotion="idle"
+                                variant="mini"
+                                size="full"
+                                animate={true}
+                              />
+                            </div>
+                            <div className="w-5 h-0.5 rounded-full bg-black/60 blur-[1px] mt-0.5" />
+                          </div>
+                        </motion.div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* 
+                    ----------------------------------------------------
+                    STATE 3: COMPLETED (Golden Emblem + Radiance Effects)
+                    ----------------------------------------------------
+                  */}
+                  {isCompleted && (
+                    <div className="relative flex items-center justify-center">
+                      {/* Golden Radiance Aura */}
+                      <motion.div
+                        animate={{
+                          scale: [1, 1.2, 1],
+                          opacity: [0.5, 0.9, 0.5],
+                        }}
+                        transition={{
+                          repeat: Infinity,
+                          duration: 3.5,
+                          ease: "easeInOut",
+                        }}
+                        className="absolute -inset-4 rounded-full bg-yellow-400/25 blur-md pointer-events-none"
+                      />
+
+                      {/* Upward Drifting Golden Pixel Sparkles */}
+                      <div className="absolute inset-0 pointer-events-none">
+                        {[...Array(3)].map((_, pi) => (
+                          <motion.div
+                            key={pi}
+                            animate={{
+                              y: [-2, -18],
+                              opacity: [1, 0],
+                              scale: [1, 0.5],
+                            }}
+                            transition={{
+                              repeat: Infinity,
+                              duration: 1.8 + pi * 0.4,
+                              delay: pi * 0.4,
+                            }}
+                            className="absolute w-1 h-1 bg-yellow-300 shadow-[0_0_4px_#FFC719]"
+                            style={{ left: `${25 + pi * 25}%`, top: "0%" }}
                           />
-                        </div>
-                        <div className="w-7 h-1 rounded-full bg-black/70 blur-[1px] mt-0.5" />
+                        ))}
                       </div>
 
-                      {/* Chosen Companion Mini Sprite */}
-                      <div className="flex flex-col items-center">
-                        <div className="relative w-6 h-6 border border-border-card bg-[#02091F]/90 p-0.5 flex items-center justify-center">
-                          <PixelCompanion
-                            companionId={player.companion || "nova"}
-                            emotion="idle"
-                            variant="mini"
-                            size="full"
-                            animate={true}
-                          />
-                        </div>
-                        <div className="w-5 h-0.5 rounded-full bg-black/60 blur-[1px] mt-0.5" />
-                      </div>
-                    </motion.div>
+                      {/* Ornate Golden Emblem Node */}
+                      <motion.div
+                        whileHover={{ scale: 1.2 }}
+                        whileTap={{ scale: 0.95 }}
+                        className={`relative w-10 h-10 sm:w-11 sm:h-11 border-2 flex items-center justify-center transition-all ${
+                          isSelected
+                            ? "bg-gradient-to-br from-yellow-300 via-amber-400 to-yellow-500 text-yellow-950 border-2 border-white shadow-[0_0_18px_#FFC719]"
+                            : "bg-gradient-to-br from-yellow-400 via-amber-500 to-yellow-600 text-yellow-950 border-2 border-yellow-200 shadow-[0_0_14px_#FFC719]"
+                        }`}
+                      >
+                        <Crown className="w-4 h-4 text-yellow-950 fill-yellow-950" />
+
+                        {/* Completion Seal Star */}
+                        <span className="absolute -top-2.5 -right-2.5 bg-yellow-400 text-yellow-950 font-bold text-[8px] font-pixel px-1 border border-yellow-200 leading-tight shadow-md">
+                          ★
+                        </span>
+                      </motion.div>
+                    </div>
                   )}
 
                   {/* Standardized World Location Name Label */}
                   <div
-                    className={`absolute top-full mt-1.5 left-1/2 -translate-x-1/2 whitespace-nowrap px-1.5 py-0.5 font-pixel text-[8px] sm:text-[9px] uppercase tracking-wider pointer-events-none transition-all shadow-md ${
+                    className={`absolute top-full mt-1.5 left-1/2 -translate-x-1/2 whitespace-nowrap px-2 py-0.5 font-pixel text-[8px] sm:text-[9px] uppercase tracking-wider pointer-events-none transition-all shadow-md flex items-center gap-1 ${
                       isSelected
                         ? "bg-regent-blue text-black font-bold border border-white"
-                        : isCurrent
-                        ? "bg-regent-maroon text-white font-bold border border-red-950"
                         : isCompleted
-                        ? "bg-[#02091F]/95 text-regent-green border border-regent-green/60"
-                        : "bg-[#02091F]/90 text-text-muted border border-border-card/70"
+                        ? "bg-[#02091F]/95 text-regent-gold border border-regent-gold/80 font-bold shadow-[0_0_8px_rgba(255,199,25,0.3)]"
+                        : isCurrent
+                        ? "bg-regent-maroon text-white font-bold border border-regent-gold shadow-sm"
+                        : "bg-[#071331]/95 text-slate-400 border border-slate-700/80"
                     }`}
                   >
-                    {loc.worldName}
+                    {isCompleted && <CheckCircle2 className="w-2.5 h-2.5 text-regent-gold" />}
+                    {isLocked && <Lock className="w-2.5 h-2.5 text-slate-400" />}
+                    <span>{loc.atlasName || loc.worldName}</span>
                   </div>
                 </div>
               );
             })}
+
+            {/* Bottom Left: Retro Atlas Map Legend */}
+            <div className="absolute bottom-2 left-2 z-20 hidden sm:flex items-center gap-2 bg-[#02091F]/90 border border-border-card/80 px-2.5 py-1 backdrop-blur-sm text-[8px] font-pixel text-text-muted shadow-sm">
+              <span className="text-white font-bold flex items-center gap-1">
+                <Layers className="w-3 h-3 text-regent-gold" /> ATLAS:
+              </span>
+              <span className="flex items-center gap-1 text-slate-400">
+                <Lock className="w-2.5 h-2.5" /> FOGBOUND
+              </span>
+              <span>•</span>
+              <span className="flex items-center gap-1 text-cyan-400">
+                <Flag className="w-2.5 h-2.5" /> EXPEDITION
+              </span>
+              <span>•</span>
+              <span className="flex items-center gap-1 text-regent-gold">
+                <Crown className="w-2.5 h-2.5" /> MASTERED
+              </span>
+            </div>
           </div>
         </div>
 
@@ -440,9 +589,10 @@ export default function RegentRealmMap() {
             secret={selectedSecret}
             onClose={() => {
               setSelectedSecret(null);
-              setSelectedLocation(
-                realmLocations.find((l) => l.status === "CURRENT") || realmLocations[1]
-              );
+              const fallback =
+                dynamicAtlasLocations.find((l) => l.status === "CURRENT") ||
+                dynamicAtlasLocations[0];
+              setSelectedLocation(fallback);
             }}
           />
         </div>

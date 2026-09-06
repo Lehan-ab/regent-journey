@@ -111,11 +111,18 @@ export function isLessonCompleted(player: PlayerState | null | undefined, lesson
  * - All other chapters unlock sequentially when their immediate predecessor is completed.
  */
 export function isChapterUnlocked(player: PlayerState | null | undefined, chapterId: string): boolean {
-  if (!player) return chapterId === "loc-gateway";
-  if (chapterId === "loc-gateway") return true;
+  if (!player) return chapterId === "loc-gateway" || chapterId === "chapter-1";
+  if (chapterId === "loc-gateway" || chapterId === "chapter-1") return true;
 
   if (chapterId === "loc-membership-citadel") {
     return getMembershipReadiness(player).eligibleForBoardReview;
+  }
+
+  // Completing Chapter 1 (The Hidden Gateway) unlocks The River of Legacy (loc-rotaract-harbor)
+  if (chapterId === "loc-rotaract-harbor") {
+    if (isChapterCompleted(player, "chapter-1")) {
+      return true;
+    }
   }
 
   const idx = CANONICAL_CHAPTER_IDS.indexOf(chapterId as CanonicalChapterId);

@@ -50,7 +50,7 @@ export default function Step4Gateway({
       speaker: "aaron",
       speakerTitle: "Gatekeeper Aaron • Portal Guardian",
       expression: "speaking",
-      text: `“Halt, aspiring traveler! Before you stand the ancient stone gates of Seethawaka. You carry purpose in your stride, ${prospectName}. Beyond these archways lies the realm of the Rotaract Club of Seethawaka Regent—a self-sponsored club dedicated to service, leadership, and fellowship.”`,
+      text: `“Halt, aspiring traveler! Before you stand the ancient stone gates of Seethawaka. You carry purpose in your stride, ${prospectName}. Beyond these archways lies the realm of the Rotaract Club of Seethawaka Regent—dedicated to service, leadership, and fellowship.”`,
     },
     {
       speaker: "prospect",
@@ -153,7 +153,7 @@ export default function Step4Gateway({
         {/* Top Arch Beam */}
         <div className="absolute left-4 right-4 sm:left-14 sm:right-14 top-6 h-8 bg-[#091533] border-2 border-regent-gold/70 flex items-center justify-center z-12 shadow-lg">
           <span className="font-pixel text-[10px] sm:text-xs text-regent-gold font-bold tracking-widest uppercase flex items-center gap-2 drop-shadow">
-            <Sparkles className="w-3 h-3 text-regent-gold" /> SELF-SPONSORED REALM OF SEETHAWAKA REGENT <Sparkles className="w-3 h-3 text-regent-gold" />
+            <Sparkles className="w-3 h-3 text-regent-gold" /> REALM OF SEETHAWAKA REGENT <Sparkles className="w-3 h-3 text-regent-gold" />
           </span>
         </div>
 

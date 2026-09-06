@@ -14,6 +14,8 @@ import {
   Landmark,
   ChevronDown,
   ChevronUp,
+  Crown,
+  CloudFog,
 } from "lucide-react";
 import RetroCard from "@/components/ui/RetroCard";
 import RetroButton from "@/components/ui/RetroButton";
@@ -83,7 +85,15 @@ export default function LocationDetailPanel({
   const isLocked = location.status === "LOCKED";
 
   return (
-    <RetroCard className="p-3.5 sm:p-4 bg-gradient-to-b from-[#071331] via-[#05102A] to-[#03091B] border-2 border-regent-blue shadow-retro-card-lg relative">
+    <RetroCard
+      className={`p-3.5 sm:p-4 bg-gradient-to-b from-[#071331] via-[#05102A] to-[#03091B] border-2 shadow-retro-card-lg relative ${
+        isCompleted
+          ? "border-regent-gold/90 shadow-[0_0_15px_rgba(255,199,25,0.15)]"
+          : isLocked
+          ? "border-slate-700/80"
+          : "border-regent-blue"
+      }`}
+    >
       {/* Close Button */}
       <button
         onClick={onClose}
@@ -96,19 +106,20 @@ export default function LocationDetailPanel({
       {/* Header Info: Standardized Chapter & Status */}
       <div className="flex items-center gap-2 flex-wrap mb-1.5 pr-7">
         <span className="px-2 py-0.5 bg-regent-maroon text-white font-pixel text-[10px] uppercase border border-red-950 font-bold">
-          {location.chapterLabel}
+          {location.atlasIndex ? `ATLAS STEP ${location.atlasIndex}` : location.chapterLabel}
         </span>
+
         {isCompleted ? (
-          <span className="px-2 py-0.5 bg-green-950 text-regent-green font-pixel text-[10px] border border-regent-green/50 flex items-center gap-1 font-bold">
-            <CheckCircle2 className="w-3 h-3" /> COMPLETED
+          <span className="px-2 py-0.5 bg-yellow-950/80 text-regent-gold font-pixel text-[10px] border border-regent-gold/70 flex items-center gap-1 font-bold shadow-sm">
+            <Crown className="w-3 h-3 text-regent-gold fill-regent-gold" /> MASTERED
           </span>
         ) : isCurrent ? (
           <span className="px-2 py-0.5 bg-blue-950 text-regent-blue font-pixel text-[10px] border border-regent-blue flex items-center gap-1 font-bold animate-pulse">
-            <Sparkles className="w-3 h-3 text-regent-gold" /> CURRENT WORLD
+            <Sparkles className="w-3 h-3 text-regent-gold" /> ACTIVE EXPEDITION
           </span>
         ) : (
-          <span className="px-2 py-0.5 bg-[#1E293B] text-text-muted font-pixel text-[10px] border border-border-card flex items-center gap-1">
-            <Lock className="w-3 h-3" /> LOCKED
+          <span className="px-2 py-0.5 bg-slate-900 text-slate-400 font-pixel text-[10px] border border-slate-700 flex items-center gap-1">
+            <Lock className="w-3 h-3 text-slate-400" /> FOGBOUND
           </span>
         )}
       </div>
@@ -116,9 +127,9 @@ export default function LocationDetailPanel({
       {/* World Name & Chapter Thematic Title */}
       <div className="mb-1">
         <h3 className="font-pixel text-base sm:text-lg font-bold text-white tracking-wide leading-tight">
-          {location.worldName}
+          {location.atlasName || location.worldName}
         </h3>
-        {location.chapterTitle !== location.worldName && (
+        {location.chapterTitle !== (location.atlasName || location.worldName) && (
           <p className="font-pixel text-xs text-regent-gold tracking-wide">
             {location.chapterTitle}
           </p>
@@ -130,26 +141,61 @@ export default function LocationDetailPanel({
         <span className="truncate">{location.regionTitle}</span>
       </div>
 
-      {/* Compact Location Artwork */}
+      {/* 
+        ============================================================
+        STATE-AWARE ARTWORK / SILHOUETTE
+        ============================================================
+      */}
       <div className="relative w-full h-24 sm:h-28 mb-2.5 border-2 border-border-card bg-[#02091F] overflow-hidden">
         <Image
           src={location.image}
           alt={location.worldName}
           fill
-          className="object-cover"
+          className={`object-cover transition-all ${
+            isLocked
+              ? "filter grayscale brightness-35 contrast-125"
+              : isCompleted
+              ? "filter brightness-105 contrast-110"
+              : "filter brightness-100 contrast-105"
+          }`}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#071331] via-transparent to-transparent" />
-        <div className="absolute bottom-1.5 left-1.5 px-2 py-0.2 bg-[#02091F]/90 text-[9px] font-pixel text-regent-gold border border-yellow-900/50 flex items-center gap-1">
-          <Sparkles className="w-2.5 h-2.5" /> +{location.xpReward} XP REWARD
+
+        {/* Locked Fog Overlay */}
+        {isLocked && (
+          <div className="absolute inset-0 bg-[#071331]/80 backdrop-blur-[1.5px] flex flex-col items-center justify-center text-center p-2 z-10">
+            <div className="p-1.5 bg-slate-950 border border-slate-700 text-slate-400 mb-1 rounded-none shadow-sm">
+              <CloudFog className="w-4 h-4 text-slate-300 animate-pulse" />
+            </div>
+            <span className="text-[9px] font-pixel text-slate-300 uppercase tracking-wider font-bold">
+              CLOAKED IN THE MISTS OF SEETHAWAKA
+            </span>
+          </div>
+        )}
+
+        {/* Completed Golden Laurel Banner */}
+        {isCompleted && (
+          <div className="absolute top-1.5 left-1.5 px-2 py-0.5 bg-gradient-to-r from-amber-600 to-yellow-500 text-yellow-950 text-[9px] font-pixel font-bold border border-yellow-200 flex items-center gap-1 shadow-md z-10">
+            <Crown className="w-2.5 h-2.5 fill-yellow-950" />
+            {location.goldenEmblemTitle || "GOLDEN EMBLEM UNLOCKED"}
+          </div>
+        )}
+
+        <div className="absolute inset-0 bg-gradient-to-t from-[#071331] via-transparent to-transparent pointer-events-none" />
+
+        {/* XP Reward Chip */}
+        <div className="absolute bottom-1.5 left-1.5 px-2 py-0.5 bg-[#02091F]/90 text-[9px] font-pixel text-regent-gold border border-yellow-900/50 flex items-center gap-1 z-10">
+          <Sparkles className="w-2.5 h-2.5 text-yellow-400" /> +{location.xpReward} XP REWARD
         </div>
       </div>
 
-      {/* Short 1-Paragraph Description */}
+      {/* Description or Fog Atmospheric Text */}
       <p className="font-body text-xs text-text-secondary leading-relaxed mb-2.5">
-        {location.description}
+        {isLocked && location.fogDescription
+          ? location.fogDescription
+          : location.description}
       </p>
 
-      {/* Collapsible "Realm Inspiration & Lore" Reveal */}
+      {/* Collapsible Realm Inspiration & Lore */}
       {location.seethawakaInspiration && (
         <div className="mb-2.5 border border-border-card/60 bg-[#02091F]/80">
           <button
@@ -158,7 +204,7 @@ export default function LocationDetailPanel({
           >
             <span className="flex items-center gap-1.5 truncate">
               <Landmark className="w-3 h-3 text-regent-gold shrink-0" />
-              <span>Realm Inspiration</span>
+              <span>Seethawaka Heritage Lore</span>
             </span>
             {showLore ? (
               <ChevronUp className="w-3.5 h-3.5 shrink-0" />
@@ -185,7 +231,7 @@ export default function LocationDetailPanel({
         <div className="mb-3 bg-[#02091F] p-2.5 border border-border-card">
           <div className="flex items-center justify-between text-[11px] font-pixel mb-1">
             <span className="text-regent-blue flex items-center gap-1">
-              <BookOpen className="w-3 h-3" /> PROGRESS
+              <BookOpen className="w-3 h-3" /> EXPEDITION PROGRESS
             </span>
             <span className="text-white font-bold">
               {location.lessonsCompleted} / {location.lessonsTotal} LESSONS
@@ -206,12 +252,17 @@ export default function LocationDetailPanel({
       )}
 
       {/* Locked Requirement Notice */}
-      {isLocked && location.unlockRequirement && (
-        <div className="mb-3 p-2 bg-[#02091F] border border-border-card flex items-start gap-1.5 text-[11px] text-text-muted">
-          <Lock className="w-3 h-3 text-orange-400 shrink-0 mt-0.5" />
-          <span>
-            Requirement: <strong className="text-text-secondary">{location.unlockRequirement}</strong>
-          </span>
+      {isLocked && (
+        <div className="mb-3 p-2 bg-[#02091F] border border-slate-700/80 flex items-start gap-2 text-[11px] text-slate-300">
+          <Lock className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+          <div>
+            <div className="font-pixel text-[9px] text-amber-400 uppercase tracking-wider mb-0.5">
+              FOG OF WAR REQUIREMENT
+            </div>
+            <span>
+              {location.unlockRequirement || "Complete previous realms on the expedition path to disperse the mist."}
+            </span>
+          </div>
         </div>
       )}
 
@@ -229,17 +280,18 @@ export default function LocationDetailPanel({
             <RetroButton
               variant="blue"
               size="sm"
-              href={`/journey/${location.id}`}
+              href={location.routeHref || `/journey/${location.id}`}
               icon={<ArrowRight className="w-3.5 h-3.5" />}
               iconPosition="right"
             >
-              CONTINUE JOURNEY
+              ENTER EXPEDITION
             </RetroButton>
           ) : isCompleted ? (
             <RetroButton
-              variant="outline"
+              variant="yellow"
               size="sm"
-              href={`/journey/${location.id}`}
+              href={location.routeHref || `/journey/${location.id}`}
+              icon={<Sparkles className="w-3 h-3 text-yellow-950" />}
             >
               REVISIT REALM
             </RetroButton>
@@ -248,8 +300,9 @@ export default function LocationDetailPanel({
               variant="outline"
               size="sm"
               disabled
+              icon={<Lock className="w-3 h-3 text-slate-500" />}
             >
-              LOCKED
+              FOGBOUND
             </RetroButton>
           )}
         </div>

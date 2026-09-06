@@ -7,6 +7,7 @@ import PixelCompanion from "@/components/companion/PixelCompanion";
 import AskNovaModal from "@/components/ui/AskNovaModal";
 import { usePlayer } from "@/context/PlayerContext";
 import { COMPANIONS } from "@/data/companionsData";
+import { personalizeDialogue } from "@/lib/dialoguePersonalizer";
 
 export default function CompanionGreeting() {
   const { player } = usePlayer();
@@ -14,17 +15,23 @@ export default function CompanionGreeting() {
   const [dialogueIndex, setDialogueIndex] = useState(0);
 
   const companion = COMPANIONS[player.companion] || COMPANIONS.nova;
-  const playerName = player.name || "Explorer";
 
   const rawGreetings = companion.homeGreetings || [
     `“Rotary Roots is active, {name}. Your next lesson is Service Above Self.”`,
     `“Complete Chapter 1 to unlock the Seethawaka riverboats at Rotaract Harbor!”`,
-    `“Explore all 7 Avenues in The Seven Realms to discover where your passion ignites.”`,
-    `“Every 100 XP brings you closer to the Pathfinder rank and official induction.”`,
-    `“Check the upcoming General Meeting mission to earn +150 bonus XP!”`,
+    `“Explore the 11 avenues in {chapter} to discover where your passion ignites, {name}.”`,
+    `“Every 100 XP brings you closer to the Pathfinder rank and official induction, {name}.”`,
+    `“Check the upcoming General Meeting mission to earn +150 bonus XP, {name}!”`,
   ];
 
-  const dialogues = rawGreetings.map((d) => d.replace(/\{name\}/g, playerName));
+  const dialogues = rawGreetings.map((d) =>
+    personalizeDialogue(d, {
+      name: player.name,
+      level: player.level,
+      chapter: player.currentWorld,
+      location: player.currentWorld,
+    })
+  );
 
   const cycleDialogue = (e: React.MouseEvent) => {
     e.stopPropagation();

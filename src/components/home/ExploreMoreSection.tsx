@@ -27,7 +27,7 @@ export default function ExploreMoreSection() {
         return (
           <div className="relative w-12 h-12 bg-[#050F2D] border-2 border-border-card flex items-center justify-center overflow-hidden shadow-[0_2px_0_#1b263b]">
             <Image
-              src="/images/nova_companion.jpg"
+              src="/assets/pixel/characters/companions/nova/portrait.jpg"
               alt="Nova Companion"
               fill
               className="object-cover"

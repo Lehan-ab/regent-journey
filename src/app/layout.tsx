@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Poppins, Pixelify_Sans, Press_Start_2P } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/layout/Navbar";
@@ -27,14 +27,27 @@ const pressStart = Press_Start_2P({
   display: "swap",
 });
 
+export const viewport: Viewport = {
+  themeColor: "#02091F",
+  width: "device-width",
+  initialScale: 1,
+};
+
 export const metadata: Metadata = {
   title: "Regent Journey | Prospect Digital Guide",
   description:
-    "Prospect Digital Guide for the Rotaract Club of Seethawaka Regent. Level up your journey in leadership, fellowship, and community service.",
+    "Prospect Digital Guide for the Rotaract Club of Seethawaka Regent. A 16-bit retro fantasy RPG exploration of leadership, fellowship, and service.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Regent Realm",
+  },
 };
 
 import AudioControlWidget from "@/components/audio/AudioControlWidget";
 import FloatingClashGuide from "@/components/companion/FloatingClashGuide";
+import PwaRegister from "@/components/pwa/PwaRegister";
 
 export default function RootLayout({
   children,
@@ -51,6 +64,7 @@ export default function RootLayout({
           <BottomNav />
           <AudioControlWidget />
           <FloatingClashGuide />
+          <PwaRegister />
         </PlayerProvider>
       </body>
     </html>

@@ -82,3 +82,32 @@ export interface KnowledgeTrial {
   hint: string;
   successMessage: string;
 }
+
+// Re-export new modular Story Engine contracts
+export type {
+  StoryChapter,
+  StoryScene,
+  StoryDialogue,
+  StoryLesson,
+  StoryInteraction,
+  StoryReward,
+  StoryLocation,
+  StoryPipelineStage,
+  PipelineState,
+  ProgressionEvent,
+  InteractionType,
+  ScenarioChoiceOption,
+  ProtocolStep,
+  MatchingPair,
+  CinematicIntroConfig,
+  CinematicIntroSlide,
+  ChapterCompletionConfig,
+  StoryCodexSection,
+  RealmCoordinates,
+  SeethawakaHeritage,
+  BadgeAward,
+  ItemUnlock,
+  SceneActor,
+  SceneBackdrop,
+  StageAtmosphere,
+} from "@/story/types";

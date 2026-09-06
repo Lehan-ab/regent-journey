@@ -126,7 +126,7 @@ export default function StartPage() {
             className="inline-flex items-center gap-2 px-3.5 py-1 bg-gradient-to-r from-regent-maroon via-red-900 to-regent-maroon text-white border border-regent-gold/60 font-pixel text-xs sm:text-sm uppercase tracking-widest mb-3 shadow-md"
           >
             <Shield className="w-3.5 h-3.5 text-regent-gold" />
-            ROTARACT CLUB OF SEETHAWAKA REGENT • SELF-SPONSORED CLUB
+            ROTARACT CLUB OF SEETHAWAKA REGENT • DISTRICT 3220
           </motion.div>
 
           {/* Main Brand Title */}

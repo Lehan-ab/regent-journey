@@ -10,6 +10,7 @@ import { COMPANIONS } from "@/data/companionsData";
 import { CHAPTERS_DATA } from "@/data/chaptersData";
 import { realmLocations } from "@/data/realmMapLocations";
 import { audioManager } from "@/lib/audioManager";
+import { personalizeDialogue } from "@/lib/dialoguePersonalizer";
 
 export default function FloatingClashGuide() {
   const router = useRouter();
@@ -51,14 +52,28 @@ export default function FloatingClashGuide() {
       const timer = setTimeout(() => {
         setBubbleText(
           nextTarget
-            ? `Chief ${name}! The realm of ${nextTarget.chapter.worldName} awaits your command!`
-            : `Legendary Chief ${name}! You have mastered every realm in Seethawaka!`
+            ? personalizeDialogue(
+                companion.id === "nova"
+                  ? "Welcome back, {name}. The realm of {location} awaits your wisdom."
+                  : companion.id === "raya"
+                  ? "{name}! Another quest is waiting in {location}!"
+                  : "Good to see you, {name}. Let's advance into {location}.",
+                { name, location: nextTarget.chapter.worldName }
+              )
+            : personalizeDialogue(
+                companion.id === "nova"
+                  ? "Magnificent work, {name}. You have mastered every realm in Seethawaka."
+                  : companion.id === "raya"
+                  ? "Incredible, {name}! Every realm in Seethawaka has been conquered!"
+                  : "Respect, {name}. Every realm in Seethawaka stands mastered.",
+                { name }
+              )
         );
         setHasPrompted(true);
       }, 2500);
       return () => clearTimeout(timer);
     }
-  }, [hasPrompted, isHydrated, isExcluded, nextTarget, name]);
+  }, [hasPrompted, isHydrated, isExcluded, nextTarget, name, companion.id]);
 
   if (isExcluded || !isHydrated) return null;
 
@@ -104,7 +119,7 @@ export default function FloatingClashGuide() {
               <div className="flex items-center justify-between gap-1 mb-1">
                 <span className="font-pixel text-[9px] text-regent-gold uppercase font-bold flex items-center gap-1">
                   <Sparkles className="w-3 h-3 text-regent-gold" />
-                  {companion.name} • CHIEF GUIDE
+                  {companion.name} • COMPANION GUIDE
                 </span>
                 <button
                   onClick={(e) => {
@@ -168,7 +183,7 @@ export default function FloatingClashGuide() {
                   <span className="font-serif text-regent-gold text-base">⚜</span>
                   <div>
                     <h3 className="font-pixel text-sm text-regent-gold font-bold uppercase">
-                      CHIEF GUIDE {companion.name.toUpperCase()}
+                      COMPANION {companion.name.toUpperCase()}
                     </h3>
                     <p className="text-[10px] text-[#A48871] font-pixel">
                       {companion.tagline}
@@ -198,12 +213,18 @@ export default function FloatingClashGuide() {
 
                 <div className="flex-1 min-w-0">
                   <div className="text-[10px] font-pixel text-regent-gold mb-1 font-bold">
-                    ORDERS FOR CHIEF {name.toUpperCase()}:
+                    GUIDANCE FOR {name.toUpperCase()}:
                   </div>
                   <p className="font-serif text-xs sm:text-sm text-[#F0E6D8] leading-relaxed">
                     {nextTarget
-                      ? `“Chief ${name}! Our next objective is ${nextTarget.lesson.title} inside ${nextTarget.chapter.worldName}! Complete the chronicle trials to earn +${nextTarget.lesson.xpReward} XP!”`
-                      : `“Triumphant news, Chief ${name}! You have explored all 9 realms and reached the Membership Citadel! Wear your Regent pin with royal pride!”`}
+                      ? personalizeDialogue(
+                          `“{name}! Our next objective is ${nextTarget.lesson.title} inside {location}! Complete the chronicle trials to earn +${nextTarget.lesson.xpReward} XP!”`,
+                          { name, location: nextTarget.chapter.worldName }
+                        )
+                      : personalizeDialogue(
+                          `“Triumphant news, {name}! You have explored all 9 realms and reached the Membership Citadel! Wear your Regent pin with royal pride!”`,
+                          { name }
+                        )}
                   </p>
                 </div>
               </div>

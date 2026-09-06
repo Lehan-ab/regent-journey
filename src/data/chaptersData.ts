@@ -4,6 +4,8 @@ import {
   LessonSourceInfo,
   KnowledgeTrial,
 } from "@/types/story";
+import { adaptStoryChapterToLegacy } from "@/story/adapters/legacyAdapter";
+import { CHAPTER_1_HIDDEN_GATEWAY } from "@/story/chapters/chapter1";
 
 export type StoryDialogueBeat = DialogueBeat;
 
@@ -75,6 +77,11 @@ export interface ChapterDetails {
 }
 
 export const CHAPTERS_DATA: Record<string, ChapterDetails> = {
+  // =========================================================================
+  // CHAPTER 1 — THE HIDDEN GATEWAY (Curriculum V2 Story Engine)
+  // =========================================================================
+  "chapter-1": adaptStoryChapterToLegacy(CHAPTER_1_HIDDEN_GATEWAY),
+
   // =========================================================================
   // PROLOGUE — THE GATEWAY
   // =========================================================================
@@ -807,7 +814,7 @@ export const CHAPTERS_DATA: Record<string, ChapterDetails> = {
     id: "loc-rotaract-harbor",
     chapterNumber: 2,
     chapterLabel: "CHAPTER 2",
-    chapterTitle: "Rotaract Harbor",
+    chapterTitle: "The River of Legacy",
     worldName: "River Basin Harbor",
     regionTitle: "Historic Kelani / Seethawaka River Confluence",
     guideNpc: "port-master-kael",
@@ -820,8 +827,8 @@ export const CHAPTERS_DATA: Record<string, ChapterDetails> = {
         id: "lesson-2-1",
         chapterId: "loc-rotaract-harbor",
         lessonNumber: 1,
-        title: "Club, District & the Wider Network",
-        subtitle: "The Concentric Rotaract Ecosystem",
+        title: "The Regent Chronicle",
+        subtitle: "Club, District & The Concentric Network",
         readTime: "3 min",
         xpReward: 25,
         storyIntro: {

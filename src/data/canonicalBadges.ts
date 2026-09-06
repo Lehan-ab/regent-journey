@@ -54,7 +54,7 @@ export const CANONICAL_BADGES: BadgeDefinition[] = [
   {
     id: "badge-regent-pioneer",
     title: "REGENT PIONEER",
-    description: "Explored RACSR's self-sponsored charter, 2026-27 Board of Officials, culture, and signature initiatives.",
+    description: "Explored RACSR's club charter, 2026-27 Board of Officials, culture, and signature initiatives.",
     imageUrl: "/images/chapter2_odyssey.jpg",
     rarity: "EPIC",
     xpAwarded: 200,
@@ -170,6 +170,7 @@ export const CANONICAL_BADGES: BadgeDefinition[] = [
 ];
 
 export const CANONICAL_BADGES_BY_CHAPTER: Record<string, BadgeDefinition> = {
+  "chapter-1": CANONICAL_BADGES[0],
   "loc-gateway": CANONICAL_BADGES[0],
   "loc-rotary-roots": CANONICAL_BADGES[1],
   "loc-rotaract-harbor": CANONICAL_BADGES[2],

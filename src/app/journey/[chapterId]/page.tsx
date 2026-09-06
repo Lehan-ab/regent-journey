@@ -33,6 +33,8 @@ import { usePlayer } from "@/context/PlayerContext";
 import { CHAPTERS_DATA, LessonData, ChapterDetails } from "@/data/chaptersData";
 import { realmLocations } from "@/data/realmMapLocations";
 import { audioManager } from "@/lib/audioManager";
+import { getStoryChapter, adaptStoryChapterToLegacy, adaptStoryLocationToLegacy } from "@/story";
+import InteractiveChallengeView from "@/components/story/InteractiveChallengeView";
 
 
 interface TrialSkin {
@@ -145,8 +147,9 @@ export default function ChapterQuestReaderPage() {
   const { player, isHydrated, completeLesson, isLessonCompleted, isChapterUnlocked } = usePlayer();
 
   const chapterId = (params?.chapterId as string) || "loc-rotary-roots";
-  const chapter: ChapterDetails | undefined = CHAPTERS_DATA[chapterId];
-  const realmLocation = realmLocations.find((r) => r.id === chapterId);
+  const storyChapter = getStoryChapter(chapterId);
+  const chapter: ChapterDetails | undefined = CHAPTERS_DATA[chapterId] || (storyChapter ? adaptStoryChapterToLegacy(storyChapter) : undefined);
+  const realmLocation = realmLocations.find((r) => r.id === chapterId) || (storyChapter ? adaptStoryLocationToLegacy(storyChapter.location) : undefined);
 
   // Determine initial lesson synchronously from searchParams if valid
   const requestedLessonParam = searchParams?.get("lesson");
@@ -208,9 +211,10 @@ export default function ChapterQuestReaderPage() {
     nextChapterTitle?: string;
   }>({ xpAwarded: 0 });
 
-  // Auto-play Chapter Intro once per session when entering chapter
+  // Auto-play Chapter Intro once per session when entering chapter & start location music theme
   useEffect(() => {
     if (!chapter) return;
+    audioManager.startLocationTheme(chapterId);
     const storageKey = `seen_intro_${chapter.id}`;
     const seen = typeof window !== "undefined" ? sessionStorage.getItem(storageKey) : null;
     if (!seen) {
@@ -219,7 +223,7 @@ export default function ChapterQuestReaderPage() {
         sessionStorage.setItem(storageKey, "true");
       }
     }
-  }, [chapter]);
+  }, [chapter, chapterId]);
 
   if (!chapter) {
     return (
@@ -264,6 +268,7 @@ export default function ChapterQuestReaderPage() {
   const currentTrial = activeLesson?.knowledgeTrial || activeLesson?.knowledgeCheck;
   const currentLessonIndex = chapter.lessons.findIndex((l) => l.id === activeLesson?.id);
   const activeIsCompleted = isLessonCompleted(activeLesson?.id || "");
+  const activeStoryLesson = storyChapter?.lessons.find((l) => l.id === activeLesson?.id);
 
   // Check quiz option & trigger automatic guidance
   const handleCheckAnswer = () => {
@@ -293,13 +298,17 @@ export default function ChapterQuestReaderPage() {
 
       // Trigger automatic guidance modal & completion cinematic
       if (res.chapterCompleted || isLastLesson) {
+        const nextChapterTargetId = storyChapter?.completionReward?.unlockedWorldId || "loc-rotaract-harbor";
         const currentIdxInRealms = realmLocations.findIndex((r) => r.id === chapter.id);
-        const nextLoc = realmLocations[currentIdxInRealms + 1] || realmLocations[0];
+        const targetLoc =
+          realmLocations.find((r) => r.id === nextChapterTargetId) ||
+          realmLocations[currentIdxInRealms + 1] ||
+          realmLocations[0];
         setCompletionCinematicData({
           xpAwarded: activeLesson.xpReward + chapter.xpReward,
           badgeTitle: res.badgeUnlocked?.title || chapter.badgeReward,
-          nextChapterId: nextLoc.id,
-          nextChapterTitle: nextLoc.worldName,
+          nextChapterId: targetLoc.id,
+          nextChapterTitle: targetLoc.worldName,
         });
         setShowCompletionCinematic(true);
       } else {
@@ -512,6 +521,7 @@ export default function ChapterQuestReaderPage() {
         /* INTERACTIVE STORYBOOK MODE: Guide and Prospect Conversational Scene */
         <div className="mb-8">
           <StorybookDialogueView
+            key={activeLesson.id}
             lesson={activeLesson}
             chapterTitle={chapter.chapterTitle}
             chapterLabel={chapter.chapterLabel}
@@ -519,7 +529,9 @@ export default function ChapterQuestReaderPage() {
             chapterNumber={chapter.chapterNumber}
             guideNpcId={chapter.guideNpc || getNPCForChapter(chapter.id)?.id || "gatekeeper-aaron"}
             onProceedToKnowledgeCheck={() => {
-              const el = document.getElementById("knowledge-check-section");
+              const el =
+                document.getElementById("interactive-challenge-section") ||
+                document.getElementById("knowledge-check-section");
               if (el) el.scrollIntoView({ behavior: "smooth" });
             }}
           />
@@ -629,7 +641,19 @@ export default function ChapterQuestReaderPage() {
         </div>
       )}
 
-      {/* 6. The Guardian's Riddle / Interactive Knowledge Check */}
+      {/* 5B. Hands-on Interactive Challenge (Story Engine) */}
+      {activeStoryLesson?.interactiveChallenge && (
+        <InteractiveChallengeView
+          key={`challenge-${activeLesson.id}`}
+          challenge={activeStoryLesson.interactiveChallenge}
+          onChallengePassed={() => {
+            const el = document.getElementById("knowledge-check-section");
+            if (el) el.scrollIntoView({ behavior: "smooth" });
+          }}
+          isAlreadyPassed={activeIsCompleted}
+        />
+      )}
+
       {/* 6. The Guardian's Riddle / Interactive Knowledge Trial */}
       {currentTrial && (() => {
         const skin = TRIAL_SKINS[chapter.id] || TRIAL_SKINS["loc-gateway"];

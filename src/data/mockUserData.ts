@@ -65,7 +65,7 @@ export const mockUser: UserProfile = {
   currentWorld: "Rotary Roots",
   nextLesson: "Service Above Self",
   avatarUrl: "/images/lehan_avatar.jpg",
-  companionUrl: "/images/nova_companion.jpg",
+  companionUrl: "/assets/pixel/characters/companions/nova/portrait.jpg",
 };
 
 export const mockMissions: Mission[] = [

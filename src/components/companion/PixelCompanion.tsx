@@ -25,9 +25,9 @@ const sizeMap = {
 };
 
 const COMPANION_IMAGE_MAP: Record<CompanionId, string> = {
-  raya: "/images/raya_companion.jpg",
-  nova: "/images/nova_companion.jpg",
-  kai: "/images/kai_companion.jpg",
+  raya: "/assets/pixel/characters/companions/raya/portrait.jpg",
+  nova: "/assets/pixel/characters/companions/nova/portrait.jpg",
+  kai: "/assets/pixel/characters/companions/kai/portrait.jpg",
 };
 
 export default function PixelCompanion({
@@ -39,7 +39,7 @@ export default function PixelCompanion({
   className = "",
   showGlow = false,
 }: PixelCompanionProps) {
-  const imageSrc = COMPANION_IMAGE_MAP[companionId] || "/images/nova_companion.jpg";
+  const imageSrc = COMPANION_IMAGE_MAP[companionId] || "/assets/pixel/characters/companions/nova/portrait.jpg";
 
   // PORTRAIT VERSION (High-Resolution Pixel Art Creature Portrait)
   if (variant === "portrait") {

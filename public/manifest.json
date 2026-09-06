@@ -1,0 +1,26 @@
+{
+  "name": "Regent Journey | The Regent Realm",
+  "short_name": "Regent Realm",
+  "description": "Prospect Digital Guide for the Rotaract Club of Seethawaka Regent. A 16-bit retro RPG exploration of leadership, fellowship, and service.",
+  "start_url": "/home",
+  "display": "standalone",
+  "background_color": "#02091F",
+  "theme_color": "#02091F",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/assets/pixel/characters/companions/nova/portrait.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/pixel/ui/chapter_cards/card_01_hidden_gateway.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["education", "community", "games"],
+  "screenshots": []
+}

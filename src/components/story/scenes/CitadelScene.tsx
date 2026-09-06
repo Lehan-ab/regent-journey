@@ -125,7 +125,7 @@ export default function CitadelScene({
                     RACSR CLUB COMMITMENT
                   </div>
                   <p className="text-[8px] font-serif text-[#DFCDBE] mt-0.5">
-                    Self-sponsored heritage, Seethawaka valley community impact & fellowship.
+                    Seethawaka valley community impact, leadership & fellowship.
                   </p>
                 </div>
               </div>

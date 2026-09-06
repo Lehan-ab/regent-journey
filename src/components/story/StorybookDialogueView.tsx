@@ -23,6 +23,7 @@ import { getNPC } from "@/data/npcRegistry";
 import { CompanionEmotion } from "@/types/player";
 import NPCPortrait from "@/components/story/NPCPortrait";
 import StorySceneContainer from "@/components/story/StorySceneContainer";
+import { personalizeDialogue } from "@/lib/dialoguePersonalizer";
 
 interface StorybookDialogueViewProps {
   lesson: LessonData;
@@ -51,6 +52,11 @@ export default function StorybookDialogueView({
 
   const [currentBeatIndex, setCurrentBeatIndex] = useState(0);
 
+  // Reset beat index whenever the active lesson changes
+  React.useEffect(() => {
+    setCurrentBeatIndex(0);
+  }, [lesson.id]);
+
   // Scripted dialogue beats from LessonData
   const beats = lesson.scriptedDialogue || [];
   const currentBeat = beats[currentBeatIndex] || beats[0];
@@ -63,23 +69,31 @@ export default function StorybookDialogueView({
   // NPC lookup
   const npc = getNPC(guideNpcId) || getNPC("gatekeeper-aaron");
 
-  // Determine text: support companion personality variants
+  // Determine text: support companion personality variants and personal tokens
   const displayText = React.useMemo(() => {
     if (!currentBeat) return "";
+    let rawText = currentBeat.text;
     if (isCompanion && currentBeat.companionVariants) {
-      return (
+      rawText =
         currentBeat.companionVariants[companionKey] ||
         currentBeat.companionVariants.nova ||
-        currentBeat.text
-      );
+        currentBeat.text;
     }
-    return currentBeat.text;
-  }, [currentBeat, isCompanion, companionKey]);
+    return personalizeDialogue(rawText, {
+      name: player.name,
+      chapter: chapterTitle,
+      location: worldName,
+    });
+  }, [currentBeat, isCompanion, companionKey, player.name, chapterTitle, worldName]);
 
-  // Audio blip on dialogue turn
+  // Audio blip on dialogue turn with companion vocal synthesis
   React.useEffect(() => {
-    audioManager.playDialogueBlip(isExplorer ? 100 : isCompanion ? 50 : 0);
-  }, [currentBeatIndex, isExplorer, isCompanion]);
+    if (isCompanion) {
+      audioManager.playCompanionBlip(companion.id);
+    } else {
+      audioManager.playDialogueBlip(isExplorer ? 100 : 0);
+    }
+  }, [currentBeatIndex, isExplorer, isCompanion, companion.id]);
 
   const handleNextBeat = () => {
     audioManager.playTap();

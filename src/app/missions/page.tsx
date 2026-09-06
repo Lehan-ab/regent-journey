@@ -1,17 +1,23 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Target, Sparkles, Clock, MapPin, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Target, Sparkles, Clock, MapPin, CheckCircle2, ShieldCheck, QrCode } from "lucide-react";
 import RetroCard from "@/components/ui/RetroCard";
 import RetroButton from "@/components/ui/RetroButton";
 import { usePlayer } from "@/context/PlayerContext";
-import { CANONICAL_MISSIONS } from "@/data/missionsData";
+import { CANONICAL_MISSIONS, CanonicalMission } from "@/data/missionsData";
+import OfficerVerificationModal from "@/components/missions/OfficerVerificationModal";
 
 export default function MissionsPage() {
-  const { player, isHydrated, enrollMission } = usePlayer();
+  const { player, isHydrated, enrollMission, verifyMission } = usePlayer();
+  const [activeVerifyMission, setActiveVerifyMission] = useState<CanonicalMission | null>(null);
 
   const totalAvailableXp = CANONICAL_MISSIONS.reduce((acc, m) => acc + m.rewardXp, 0);
+
+  const meetingsVerified = isHydrated ? player.membership?.meetingsVerified || 0 : 0;
+  const projectsVerified = isHydrated ? player.membership?.projectsVerified || 0 : 0;
+  const isBoardReady = isHydrated && player.membership?.eligibleForBoardReview;
 
   return (
     <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 pt-4 sm:pt-6 pb-12">
@@ -28,7 +34,7 @@ export default function MissionsPage() {
         </span>
       </div>
 
-      <div className="text-center max-w-xl mx-auto mb-8">
+      <div className="text-center max-w-xl mx-auto mb-6">
         <div className="inline-flex p-3 bg-green-950 border-2 border-regent-green mb-3 shadow-retro-card">
           <Target className="w-7 h-7 text-regent-green" />
         </div>
@@ -38,6 +44,52 @@ export default function MissionsPage() {
         <p className="text-xs sm:text-sm text-text-secondary mt-2 leading-relaxed">
           Participate in physical club assemblies, hands-on community projects, and fellowship activities to turn knowledge into real-world action.
         </p>
+      </div>
+
+      {/* Board Review Readiness Tracker */}
+      <div className="p-4 bg-[#050F2D] border-2 border-border-card mb-8 shadow-retro-card">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border-card/60">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="w-5 h-5 text-regent-gold" />
+            <span className="font-pixel text-xs sm:text-sm font-bold text-white uppercase tracking-wider">
+              FIELD INDUCTION PROGRESSION (IMPACT FRONTIER)
+            </span>
+          </div>
+          <span className={`font-pixel text-[10px] px-2 py-0.5 border ${
+            isBoardReady
+              ? "bg-green-950 text-regent-green border-green-700 font-bold animate-pulse"
+              : "bg-[#02091F] text-slate-400 border-border-card"
+          }`}>
+            {isBoardReady ? "★ READY FOR BOARD REVIEW" : "IN PROGRESS"}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-3">
+          <div className="bg-[#02091F] p-2.5 border border-border-card/80 text-center">
+            <span className="font-pixel text-[9px] text-text-muted block uppercase mb-0.5">
+              Verified Meetings
+            </span>
+            <span className="font-pixel text-base font-bold text-regent-blue">
+              {meetingsVerified} / 2
+            </span>
+          </div>
+          <div className="bg-[#02091F] p-2.5 border border-border-card/80 text-center">
+            <span className="font-pixel text-[9px] text-text-muted block uppercase mb-0.5">
+              Verified Projects
+            </span>
+            <span className="font-pixel text-base font-bold text-regent-green">
+              {projectsVerified} / 2
+            </span>
+          </div>
+          <div className="col-span-2 sm:col-span-1 bg-[#02091F] p-2.5 border border-border-card/80 text-center">
+            <span className="font-pixel text-[9px] text-text-muted block uppercase mb-0.5">
+              Induction Status
+            </span>
+            <span className="font-pixel text-xs font-bold text-regent-gold block truncate">
+              {isBoardReady ? "ELIGIBLE" : "PENDING CRITERIA"}
+            </span>
+          </div>
+        </div>
       </div>
 
       {/* Missions Grid */}
@@ -96,8 +148,13 @@ export default function MissionsPage() {
                       COMPLETED & VERIFIED
                     </RetroButton>
                   ) : isEnrolled ? (
-                    <RetroButton variant="outline" size="sm" disabled>
-                      ENROLLED • PENDING ATTENDANCE
+                    <RetroButton
+                      variant="yellow"
+                      size="sm"
+                      onClick={() => setActiveVerifyMission(mission)}
+                      className="flex items-center gap-1.5"
+                    >
+                      <QrCode className="w-3.5 h-3.5" /> OFFICER VERIFY
                     </RetroButton>
                   ) : (
                     <RetroButton
@@ -114,6 +171,19 @@ export default function MissionsPage() {
           );
         })}
       </div>
+
+      {/* Officer Verification Modal */}
+      {activeVerifyMission && (
+        <OfficerVerificationModal
+          isOpen={true}
+          onClose={() => setActiveVerifyMission(null)}
+          mission={activeVerifyMission}
+          playerName={isHydrated ? player.name : "TRAVELLER"}
+          onVerifySuccess={(missionId, officerName) => {
+            verifyMission(missionId, officerName);
+          }}
+        />
+      )}
     </div>
   );
 }
